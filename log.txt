@@ -1,0 +1,47 @@
+27-03-2025 18:20:25: Miner thread 1 started
+27-03-2025 18:20:25: Statistics thread started
+27-03-2025 18:20:25: Validator thread started
+27-03-2025 18:20:25: Miner thread 2 started
+27-03-2025 18:20:25: Miner thread 3 started
+27-03-2025 18:20:25: Miner thread 4 started
+27-03-2025 18:20:25: Miner thread 5 started
+27-03-2025 18:20:27: Validator thread closed. Exiting.
+27-03-2025 18:20:27: Statistics thread closed. Exiting.
+27-03-2025 18:20:27: All miner threads closed. Exiting.
+27-03-2025 18:25:03: Miner thread 1 started
+27-03-2025 18:25:03: Statistics thread started
+27-03-2025 18:25:03: Validator thread started
+27-03-2025 18:25:03: Miner thread 2 started
+27-03-2025 18:25:03: Miner thread 3 started
+27-03-2025 18:25:03: Miner thread 4 started
+27-03-2025 18:25:03: Miner thread 5 started
+27-03-2025 18:26:22: Validator thread started
+27-03-2025 18:26:22: Miner thread 1 started
+27-03-2025 18:26:22: Statistics thread started
+27-03-2025 18:26:22: Miner thread 2 started
+27-03-2025 18:26:22: Miner thread 3 started
+27-03-2025 18:26:22: Miner thread 4 started
+27-03-2025 18:26:22: Miner thread 5 started
+27-03-2025 18:26:23: Statistics thread closed. Exiting.
+27-03-2025 18:26:23: Validator thread closed. Exiting.
+27-03-2025 18:26:23: All miner threads closed. Exiting.
+27-03-2025 18:26:44: Statistics thread started
+27-03-2025 18:26:44: Miner thread 1 started
+27-03-2025 18:26:44: Validator thread started
+27-03-2025 18:26:44: Miner thread 2 started
+27-03-2025 18:26:44: Miner thread 3 started
+27-03-2025 18:26:44: Miner thread 4 started
+27-03-2025 18:26:44: Miner thread 5 started
+27-03-2025 18:26:45: Statistics thread closed. Exiting.
+27-03-2025 18:26:45: All miner threads closed. Exiting.
+27-03-2025 18:26:45: Validator thread closed. Exiting.
+27-03-2025 18:32:31: Statistics thread started
+27-03-2025 18:32:31: Miner thread 1 started
+27-03-2025 18:32:31: Validator thread started
+27-03-2025 18:32:31: Miner thread 2 started
+27-03-2025 18:32:31: Miner thread 3 started
+27-03-2025 18:32:31: Miner thread 4 started
+27-03-2025 18:32:31: Miner thread 5 started
+27-03-2025 18:32:33: Validator thread closed. Exiting.
+27-03-2025 18:32:33: Statistics thread closed. Exiting.
+27-03-2025 18:32:33: All miner threads closed. Exiting.
