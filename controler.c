@@ -11,7 +11,7 @@
 #define SHM_SIZE 2048
 #define key1 1234
 #define key2 4321
-int shmid,shmid2 key, finish;
+int shmid,shmid2, key, finish;
 transactions_Pool trans_Pool;
 blockchain_Ledger ledger;
 pid_t pid1, pid2, pid3;

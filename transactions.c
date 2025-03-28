@@ -25,7 +25,6 @@ int transaction_generator(int argc, char *argv[]) {
         return 1;
     }
 
-    srand(time(NULL));
 
     // Acessar a memória compartilhada
     int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
