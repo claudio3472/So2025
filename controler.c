@@ -11,9 +11,11 @@
 #define SHM_SIZE 2048
 #define key1 1234
 #define key2 4321
+
+
 int shmid,shmid2, key, finish;
-transactions_Pool trans_Pool;
-blockchain_Ledger ledger;
+transactions_Pool *trans_Pool;
+blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
 
 void clean(){
@@ -22,7 +24,9 @@ void clean(){
     waitpid(pid2, NULL, 0);
     waitpid(pid3, NULL, 0);
 	shmctl(shmid, IPC_RMID, NULL); //elimina memoria partilhada 1
+    logwrite("Shared Memory 1 deleted\n");
     shmctl(shmid2, IPC_RMID, NULL); //elimina memoria partilhada 2
+    logwrite("Shared Memory 2 deleted\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -71,32 +75,27 @@ int main(int argc, char *argv[]) {
     
 
 
-    // Shared memory for Transaction Pool
-    if ((shmid = shmget(KEY1, SHM_SIZE, IPC_CREAT | 0777)) == -1) {
+     // Shared memory for Transaction Pool
+     if ((shmid = shmget(key1, TX_POOL_SIZE * sizeof(transactions_Pool), IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - transactions_Pool");
-        return -1;
+        return 1;
     }
     trans_Pool = (transactions_Pool *)shmat(shmid, NULL, 0);
-    if (trans_Pool == -1) { // o stor tinha um tipo antes do -1 mas n faço minima ideia o que era ahahaha
+    if (trans_Pool == (void *)-1) {
         perror("Error: in shmat - transactions_Pool");
-        return -1;
+        return 1;
     }
 
     // Shared memory for Blockchain Ledger
-    if ((shmid2 = shmget(KEY2, SHM_SIZE, IPC_CREAT | 0777)) == -1) {
+    if ((shmid2 = shmget(key2, BLOCKCHAIN_BLOCKS * sizeof(blockchain_Ledger), IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - blockchain_Ledger");
-        return -1;
+        return 1;
     }
     ledger = (blockchain_Ledger *)shmat(shmid2, NULL, 0);
-    if (ledger == -1) { // o stor tinha um tipo antes do -1 mas n faço minima ideia o que era ahahaha
+    if (ledger == (void *)-1) {
         perror("Error: in shmat - blockchain_Ledger");
-        return -1;
+        return 1;
     }
-
-    trans_Pool.max_size = TX_POOL_SIZE; //numero maximo de blocos que a pool de transações pode ter
-    ledger.max_size = BLOCKCHAIN_BLOCKS;  //numero maximo de blocos que o ledger vai poder ter
-
-
 
     pid1 = fork();
     if (pid1 < 0) {
