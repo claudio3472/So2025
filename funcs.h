@@ -1,10 +1,8 @@
 #ifndef funcs_h
 #define funcs_h
 
-typedef struct
-{
+typedef struct{
 	int current_block_id;       // ID do bloco atual
-    int max_size;                   // Tamanho máximo da pool - definido no ficheiro das configs
     int count; 
     //possivelmente vai ser precisa uma struct para transações
 } transactions_Pool;
@@ -21,7 +19,6 @@ configuration size.
 typedef struct
 {
 	//TBD
-    int max_size; //tamanho máximo do ledger - definido no ficheiro das configs
     int count; 
     //possivelmente vai ser preciso criar uma struck to tipo blocos com as cenas que vão ser pedidas no enunciado
 } blockchain_Ledger;
