@@ -8,7 +8,12 @@
 #include "funcs.h"
 
 #define BUFFER 500
-int shmid, key, finish;
+#define SHM_SIZE 2048
+#define key1 1234
+#define key2 4321
+int shmid,shmid2, key, finish;
+transactions_Pool trans_Pool;
+blockchain_Ledger ledger;
 pid_t pid1, pid2, pid3;
 
 void clean(){
@@ -16,6 +21,8 @@ void clean(){
     waitpid(pid1, NULL, 0);
     waitpid(pid2, NULL, 0);
     waitpid(pid3, NULL, 0);
+	shmctl(shmid, IPC_RMID, NULL); //elimina memoria partilhada 1
+    shmctl(shmid2, IPC_RMID, NULL); //elimina memoria partilhada 2
 }
 
 int main(int argc, char *argv[]) {
@@ -60,6 +67,35 @@ int main(int argc, char *argv[]) {
     printf("TX_POOL_SIZE = %d\n", TX_POOL_SIZE);
     printf("TRANSACTIONS_BLOCK = %d\n", TRANSACTIONS_BLOCK);
     printf("BLOCKCHAIN_BLOCKS = %d\n", BLOCKCHAIN_BLOCKS);
+
+    
+
+
+    // Shared memory for Transaction Pool
+    if ((shmid = shmget(KEY1, SHM_SIZE, IPC_CREAT | 0777)) == -1) {
+        perror("Error: in shmget - transactions_Pool");
+        return -1;
+    }
+    trans_Pool = (transactions_Pool *)shmat(shmid, NULL, 0);
+    if (trans_Pool == -1) { // o stor tinha um tipo antes do -1 mas n faço minima ideia o que era ahahaha
+        perror("Error: in shmat - transactions_Pool");
+        return -1;
+    }
+
+    // Shared memory for Blockchain Ledger
+    if ((shmid2 = shmget(KEY2, SHM_SIZE, IPC_CREAT | 0777)) == -1) {
+        perror("Error: in shmget - blockchain_Ledger");
+        return -1;
+    }
+    ledger = (blockchain_Ledger *)shmat(shmid2, NULL, 0);
+    if (ledger == -1) { // o stor tinha um tipo antes do -1 mas n faço minima ideia o que era ahahaha
+        perror("Error: in shmat - blockchain_Ledger");
+        return -1;
+    }
+
+    trans_Pool.max_size = TX_POOL_SIZE; //numero maximo de blocos que a pool de transações pode ter
+    ledger.max_size = BLOCKCHAIN_BLOCKS;  //numero maximo de blocos que o ledger vai poder ter
+
 
 
     pid1 = fork();
