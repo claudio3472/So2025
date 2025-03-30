@@ -6,6 +6,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <signal.h>
+#include <stdbool.h>
 #include "funcs.h"
 
 #define SHM_KEY 1234
@@ -23,11 +24,12 @@ void clean() {
     } else {
         printf("No shared memory to clean up.\n");
     }
-
+    printf("Exiting program...\n");
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
-    signal(SIGINT, clean);  // Register the signal handler
+    signal(SIGINT, clean);
 
     if (argc != 3) {
         printf("Usage: %s {reward} {sleep time(ms)}\n", argv[0]);
@@ -36,6 +38,7 @@ int main(int argc, char *argv[]) {
 
     int reward = atoi(argv[1]);
     int sleep_time = atoi(argv[2]);
+
 
     if (reward < 1 || reward > 3 || sleep_time < 200 || sleep_time > 3000) {
         printf("Error: Reward must be between 1 and 3, and sleep time must be between 200 and 3000 ms.\n");
@@ -58,8 +61,10 @@ int main(int argc, char *argv[]) {
 
     printf("Shared memory attached successfully.\n");
 
-    // Simulate processing (e.g., pause or do something here)
-    pause();
+    while(true){
+        printf("Transaction with reward %d added\n", reward);
+        sleep(sleep_time / 1000);
+    }
 
     return 0;
 }

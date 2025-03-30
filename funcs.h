@@ -1,9 +1,11 @@
 #ifndef funcs_h
 #define funcs_h
 
+#define SEM_NAME "/log_semaphore"
+
 typedef struct{
 	int current_block_id;       // ID do bloco atual
-    int count; 
+    int count;
     //possivelmente vai ser precisa uma struct para transações
 } transactions_Pool;
 

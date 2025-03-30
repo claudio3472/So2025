@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-FLAGS = -Wall -Wextra
+FLAGS = -Wall -Wextra -g -pthread
 
 TRANSACTIONS_SRC = transactions.c
 CONTROLER_SRC = controler.c log.c miner.c validator.c statistics.c
@@ -8,7 +8,7 @@ CONTROLER_SRC = controler.c log.c miner.c validator.c statistics.c
 TRANSACTIONS_OBJ = transactions.o
 CONTROLER_OBJ = controler.o log.o miner.o validator.o statistics.o
 
-TRANSACTIONS_PROG = transactions
+TRANSACTIONS_PROG = TxGen
 CONTROLER_PROG = controler
 
 all: ${TRANSACTIONS_PROG} ${CONTROLER_PROG}

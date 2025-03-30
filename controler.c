@@ -8,12 +8,11 @@
 #include "funcs.h"
 
 #define BUFFER 500
-#define SHM_SIZE 2048
 #define key1 1234
 #define key2 4321
 
 
-int shmid,shmid2, key, finish;
+int shmid,shmid2, finish;
 transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
@@ -27,6 +26,7 @@ void clean(){
     logwrite("Shared Memory 1 deleted\n");
     shmctl(shmid2, IPC_RMID, NULL); //elimina memoria partilhada 2
     logwrite("Shared Memory 2 deleted\n");
+    unlink(SEM_NAME);
 }
 
 int main(int argc, char *argv[]) {
@@ -72,11 +72,8 @@ int main(int argc, char *argv[]) {
     printf("TRANSACTIONS_BLOCK = %d\n", TRANSACTIONS_BLOCK);
     printf("BLOCKCHAIN_BLOCKS = %d\n", BLOCKCHAIN_BLOCKS);
 
-    
-
-
-     // Shared memory for Transaction Pool
-     if ((shmid = shmget(key1, TX_POOL_SIZE * sizeof(transactions_Pool), IPC_CREAT | 0777)) == -1) {
+    // Shared memory for Transaction Pool
+    if ((shmid = shmget(key1, TX_POOL_SIZE * sizeof(transactions_Pool), IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - transactions_Pool");
         return 1;
     }
