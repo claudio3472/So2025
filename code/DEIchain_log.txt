@@ -257,3 +257,27 @@
 30-03-2025 05:12:03: All miner threads closed. Exiting.
 30-03-2025 05:12:03: Shared Memory 1 deleted
 30-03-2025 05:12:03: Shared Memory 2 deleted
+30-03-2025 05:22:10: Miner thread 1 started
+30-03-2025 05:22:10: Validator thread started
+30-03-2025 05:22:10: Statistics thread started
+30-03-2025 05:22:10: Miner thread 2 started
+30-03-2025 05:22:10: Miner thread 3 started
+30-03-2025 05:22:10: Miner thread 4 started
+30-03-2025 05:22:10: Miner thread 5 started
+30-03-2025 05:22:31: Statistics thread closed. Exiting.
+30-03-2025 05:22:31: Validator thread closed. Exiting.
+30-03-2025 05:22:31: All miner threads closed. Exiting.
+30-03-2025 05:22:31: Shared Memory 1 deleted
+30-03-2025 05:22:31: Shared Memory 2 deleted
+30-03-2025 05:22:57: Miner thread 1 started
+30-03-2025 05:22:57: Validator thread started
+30-03-2025 05:22:57: Statistics thread started
+30-03-2025 05:22:57: Miner thread 2 started
+30-03-2025 05:22:57: Miner thread 3 started
+30-03-2025 05:22:57: Miner thread 4 started
+30-03-2025 05:22:57: Miner thread 5 started
+30-03-2025 05:23:00: Statistics thread closed. Exiting.
+30-03-2025 05:23:00: Validator thread closed. Exiting.
+30-03-2025 05:23:00: All miner threads closed. Exiting.
+30-03-2025 05:23:00: Shared Memory 1 deleted
+30-03-2025 05:23:00: Shared Memory 2 deleted

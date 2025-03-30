@@ -9,14 +9,24 @@
 #include "funcs.h"
 
 
+sem_t *sem = NULL; 
+
+int init_semaphore() {
+    if (sem == NULL) { 
+        sem = sem_open(SEM_NAME, O_CREAT, 0666, 1);
+        if (sem == SEM_FAILED) {
+            perror("Error opening semaphore");
+            return -1;
+        }
+    }
+    return 0;
+}
+
 int logwrite(char* line) {
-    sem_t *sem = sem_open(SEM_NAME, O_CREAT, 0666, 1);
-    if (sem == SEM_FAILED) {
-        perror("Error opening semaphore");
+    if (init_semaphore() != 0) {
         return -1;
     }
 
-    printf("Trying to acquire semaphore...\n");
     if (sem_wait(sem) == -1) {
         perror("Error acquiring semaphore");
         return -1;
@@ -48,7 +58,6 @@ int logwrite(char* line) {
 
 
     sem_post(sem);
-    sem_close(sem);
 
     return 0;
 }
