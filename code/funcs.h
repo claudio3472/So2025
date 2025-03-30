@@ -1,7 +1,25 @@
 #ifndef funcs_h
 #define funcs_h
 
-#define SEM_NAME "/log_semaphore"
+#include <stdio.h>
+#include <stdbool.h>
+#include <time.h>
+#include <semaphore.h> 
+#include <fcntl.h>       
+#include <sys/stat.h>    
+#include <pthread.h>     
+#include <unistd.h> 
+#include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h> 
+#include <signal.h>
+
+extern pthread_mutex_t log_mutex;
+extern sem_t *sem_transactions;
+extern sem_t *sem_blockchain;
 
 typedef struct{
 	int current_block_id;       // ID do bloco atual

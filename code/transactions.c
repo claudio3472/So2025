@@ -1,28 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <signal.h>
-#include <stdbool.h>
 #include "funcs.h"
 
 #define SHM_KEY 1234
 
-transactions_Pool *trans_pool = NULL;  // Define trans_pool globally so it can be accessed in clean()
+transactions_Pool *trans_pool = NULL;
 
 void clean() {
     if (trans_pool != NULL) {
-        // Detach shared memory
         if (shmdt(trans_pool) == -1) {
             perror("Error: Failed to detach shared memory");
         } else {
             printf("\nSuccessfully detached shared memory.\n");
         }
-    } else {
-        printf("No shared memory to clean up.\n");
     }
     printf("Exiting program...\n");
     exit(0);

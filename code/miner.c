@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdlib.h>
 #include "funcs.h"
 
 pthread_t *threads;

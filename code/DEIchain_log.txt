@@ -281,3 +281,87 @@
 30-03-2025 05:23:00: All miner threads closed. Exiting.
 30-03-2025 05:23:00: Shared Memory 1 deleted
 30-03-2025 05:23:00: Shared Memory 2 deleted
+30-03-2025 05:35:01: Validator thread started
+30-03-2025 05:35:01: Statistics thread started
+30-03-2025 05:35:01: Miner thread 1 started
+30-03-2025 05:35:01: Miner thread 2 started
+30-03-2025 05:35:01: Miner thread 3 started
+30-03-2025 05:35:01: Miner thread 4 started
+30-03-2025 05:35:01: Miner thread 5 started
+30-03-2025 05:35:18: Statistics thread closed. Exiting.
+30-03-2025 05:35:18: All miner threads closed. Exiting.
+30-03-2025 05:35:18: Validator thread closed. Exiting.
+30-03-2025 05:35:18: Shared Memory 1 deleted
+30-03-2025 05:35:18: Shared Memory 2 deleted
+30-03-2025 05:35:20: Statistics thread started
+30-03-2025 05:35:20: Miner thread 1 started
+30-03-2025 05:35:20: Miner thread 2 started
+30-03-2025 05:35:20: Validator thread started
+30-03-2025 05:35:20: Miner thread 3 started
+30-03-2025 05:35:20: Miner thread 4 started
+30-03-2025 05:35:20: Miner thread 5 started
+30-03-2025 05:35:31: Statistics thread closed. Exiting.
+30-03-2025 05:35:31: All miner threads closed. Exiting.
+30-03-2025 05:35:31: Validator thread closed. Exiting.
+30-03-2025 05:35:31: Shared Memory 1 deleted
+30-03-2025 05:35:31: Shared Memory 2 deleted
+30-03-2025 20:35:07: Validator thread started
+30-03-2025 20:35:07: Miner thread 1 started
+30-03-2025 20:35:07: Statistics thread started
+30-03-2025 20:35:07: Miner thread 2 started
+30-03-2025 20:35:07: Miner thread 3 started
+30-03-2025 20:35:07: Miner thread 4 started
+30-03-2025 20:35:07: Miner thread 5 started
+30-03-2025 20:35:11: Statistics thread closed. Exiting.
+30-03-2025 20:35:11: Validator thread closed. Exiting.
+30-03-2025 20:35:11: All miner threads closed. Exiting.
+30-03-2025 20:35:11: Shared Memory 1 deleted
+30-03-2025 20:35:11: Shared Memory 2 deleted
+30-03-2025 20:36:15: Statistics thread started
+30-03-2025 20:36:15: Miner thread 1 started
+30-03-2025 20:36:15: Validator thread started
+30-03-2025 20:36:15: Miner thread 2 started
+30-03-2025 20:36:15: Miner thread 3 started
+30-03-2025 20:36:15: Miner thread 4 started
+30-03-2025 20:36:15: Miner thread 5 started
+30-03-2025 20:36:16: Statistics thread closed. Exiting.
+30-03-2025 20:36:16: Validator thread closed. Exiting.
+30-03-2025 20:36:16: All miner threads closed. Exiting.
+30-03-2025 20:36:16: Shared Memory 1 deleted
+30-03-2025 20:36:16: Shared Memory 2 deleted
+30-03-2025 20:48:38: Miner thread 1 started
+30-03-2025 20:48:38: Validator thread started
+30-03-2025 20:48:38: Statistics thread started
+30-03-2025 20:48:38: Miner thread 2 started
+30-03-2025 20:48:38: Miner thread 3 started
+30-03-2025 20:48:38: Miner thread 4 started
+30-03-2025 20:48:38: Miner thread 5 started
+30-03-2025 20:48:54: Statistics thread closed. Exiting.
+30-03-2025 20:48:54: Validator thread closed. Exiting.
+30-03-2025 20:48:54: All miner threads closed. Exiting.
+30-03-2025 20:48:54: Shared Memory 1 deleted
+30-03-2025 20:48:54: Shared Memory 2 deleted
+30-03-2025 20:52:12: Validator thread started
+30-03-2025 20:52:12: Statistics thread started
+30-03-2025 20:52:12: Miner thread 1 started
+30-03-2025 20:52:12: Miner thread 2 started
+30-03-2025 20:52:12: Miner thread 3 started
+30-03-2025 20:52:12: Miner thread 4 started
+30-03-2025 20:52:12: Miner thread 5 started
+30-03-2025 20:52:21: Statistics thread closed. Exiting.
+30-03-2025 20:52:21: All miner threads closed. Exiting.
+30-03-2025 20:52:21: Validator thread closed. Exiting.
+30-03-2025 20:52:21: Shared Memory 1 deleted
+30-03-2025 20:52:21: Shared Memory 2 deleted
+30-03-2025 20:54:39: Validator thread started
+30-03-2025 20:54:39: Miner thread 1 started
+30-03-2025 20:54:39: Statistics thread started
+30-03-2025 20:54:39: Miner thread 2 started
+30-03-2025 20:54:39: Miner thread 3 started
+30-03-2025 20:54:39: Miner thread 4 started
+30-03-2025 20:54:39: Miner thread 5 started
+30-03-2025 20:54:50: Statistics thread closed. Exiting.
+30-03-2025 20:54:50: All miner threads closed. Exiting.
+30-03-2025 20:54:50: Validator thread closed. Exiting.
+30-03-2025 20:54:50: Shared Memory 1 deleted
+30-03-2025 20:54:50: Shared Memory 2 deleted

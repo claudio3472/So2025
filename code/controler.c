@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
 #include "funcs.h"
 
 #define BUFFER 500
@@ -17,19 +10,32 @@ transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
 
-void clean(){
+void clean() {
     printf("\nSIGINT detected. Cleaning up...\n");
     waitpid(pid1, NULL, 0);
     waitpid(pid2, NULL, 0);
     waitpid(pid3, NULL, 0);
-	shmctl(shmid, IPC_RMID, NULL); //elimina memoria partilhada 1
+    
+    shmctl(shmid, IPC_RMID, NULL); // Remove shared memory 1
     logwrite("Shared Memory 1 deleted\n");
-    shmctl(shmid2, IPC_RMID, NULL); //elimina memoria partilhada 2
+    trans_Pool = NULL; // Set pointer to NULL after deletion
+    
+    shmctl(shmid2, IPC_RMID, NULL); // Remove shared memory 2
     logwrite("Shared Memory 2 deleted\n");
-    unlink(SEM_NAME);
+    ledger = NULL;
+
+    int res = pthread_mutex_destroy(&log_mutex);
+    if (res == 0) {
+        printf("Mutex destroyed successfully.\n");
+    } else if (res == EBUSY) {
+        printf("Mutex destruction failed: Mutex is still in use.\n");
+    } else if (res == EINVAL) {
+        printf("Mutex destruction failed: Mutex is invalid.\n");
+    }
 }
 
 int main(int argc, char *argv[]) {
+    pthread_mutex_init(&log_mutex, NULL);
     char fich[BUFFER];
     if(argc != 2){
         printf("comando: %s {config-file}\n", argv[0]);
