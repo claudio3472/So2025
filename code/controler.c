@@ -66,6 +66,12 @@ void clean() {
     msgctl(mqid, IPC_RMID, NULL);
     logwrite("Message Queue deleted\n");
 
+    if (unlink("/tmp/VALIDATOR_INPUT") == 0) {
+        logwrite("Named Pipe VALIDATOR_INPUT deleted\n");
+    } else {
+        perror("Failed to delete named pipe");
+    }
+
     destroy_log_things();
     destroy_trans_sem();
     destroy_block_sem();
@@ -132,6 +138,15 @@ int main(int argc, char *argv[]) {
         logwrite("Message Queue criada\n");
     }
 
+    if (mkfifo("/tmp/VALIDATOR_INPUT", 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("Error creating named pipe");
+            exit(1);
+        }
+    } else {
+        logwrite("Named Pipe VALIDATOR_INPUT created\n");
+    }
+
     // Shared memory for Transaction Pool
 
     if ((shmid = shmget(key1, TX_POOL_SIZE * sizeof(transactions_Pool), IPC_CREAT | 0777)) == -1) {
@@ -143,6 +158,8 @@ int main(int argc, char *argv[]) {
         perror("Error: in shmat - transactions_Pool");
         return 1;
     }
+
+    trans_Pool->pool_size = TX_POOL_SIZE;
 
 
     // Shared memory for Blockchain Ledger

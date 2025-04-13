@@ -23,10 +23,17 @@ extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
 
 
-typedef struct{
-	int current_block_id;       // ID do bloco atual
+typedef struct {
+    int reward;
+    time_t timestamp;
+    int active; 
+} transaction;
+
+typedef struct {
+    int current_block_id;       
     int count;
-    //possivelmente vai ser precisa uma struct para transações
+    int pool_size;                 
+    transaction transactions[]; 
 } transactions_Pool;
 
 /*

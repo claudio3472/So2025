@@ -16,6 +16,21 @@ void clean() {
     exit(0);
 }
 
+
+void read_shared_memory() {
+    // Read the shared memory and print the contents for debugging
+    int pool_size = trans_pool->pool_size;  // Get pool size from shared memory
+
+    printf("\nReading Shared Memory Content:\n");
+    printf("Current Block ID: %d\n", trans_pool->current_block_id);
+    for (int i = 0; i < pool_size; i++) {
+        if (trans_pool->transactions[i].active == 1) {
+            printf("Transaction %d: Reward: %d, Timestamp: %ld\n",
+                i, trans_pool->transactions[i].reward, trans_pool->transactions[i].timestamp);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     signal(SIGINT, clean);
 
@@ -58,15 +73,33 @@ int main(int argc, char *argv[]) {
 
     printf("Shared memory attached successfully.\n");
 
-    while(true){
+    while (true) {
         if (sem_wait(sem_transactions) == -1) {
             perror("sem_wait failed");
             return -1;
         }
-        //vamos escrever na shared memory aqui
-        printf("Transaction with reward %d added\n", reward);
-        sem_post(sem_transactions);
-        sleep(sleep_time / 1000);
+
+        int inserted = 0;
+        int pool_size = trans_pool->pool_size; 
+        for (int i = 0; i < pool_size; i++) {
+            if (trans_pool->transactions[i].active == 0) {
+                trans_pool->transactions[i].reward = reward;
+                trans_pool->transactions[i].timestamp = time(NULL);
+                trans_pool->transactions[i].active = 1; 
+
+                printf("Transaction with reward %d added at index %d\n", reward, i);
+                trans_pool->current_block_id++; 
+                inserted = 1;
+                break; 
+            }
+        }
+
+        if (!inserted) {
+            printf("Transaction Pool is full. Skipping this transaction.\n");
+        }
+        sem_post(sem_transactions); 
+        sleep(sleep_time / 1000); 
+        read_shared_memory();
     }
 
     

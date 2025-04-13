@@ -39,3 +39,92 @@
 13-04-2025 13:58:23: Shared Memory 1 deleted
 13-04-2025 13:58:23: Shared Memory 2 deleted
 13-04-2025 13:58:23: Message Queue deleted
+13-04-2025 21:31:12: Message Queue criada
+13-04-2025 21:32:41: Message Queue criada
+13-04-2025 21:32:41: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:41: Statistics thread started
+13-04-2025 21:32:43: Statistics thread closed. Exiting.
+13-04-2025 21:32:41: Message Queue criada
+13-04-2025 21:32:41: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:41: Validator thread started
+13-04-2025 21:32:43: Validator thread closed. Exiting.
+13-04-2025 21:32:41: Message Queue criada
+13-04-2025 21:32:41: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:41: Miner thread 1 started
+13-04-2025 21:32:41: Miner thread 2 started
+13-04-2025 21:32:41: Miner thread 3 started
+13-04-2025 21:32:41: Miner thread 4 started
+13-04-2025 21:32:41: Miner thread 5 started
+13-04-2025 21:32:43: All miner threads closed. Exiting.
+13-04-2025 21:32:41: Message Queue criada
+13-04-2025 21:32:41: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:43: Shared Memory 1 deleted
+13-04-2025 21:32:43: Shared Memory 2 deleted
+13-04-2025 21:32:43: Message Queue deleted
+13-04-2025 21:32:43: Named Pipe VALIDATOR_INPUT deleted
+13-04-2025 21:32:46: Message Queue criada
+13-04-2025 21:32:46: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:46: Validator thread started
+13-04-2025 21:32:47: Validator thread closed. Exiting.
+13-04-2025 21:32:46: Message Queue criada
+13-04-2025 21:32:46: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:46: Statistics thread started
+13-04-2025 21:32:47: Statistics thread closed. Exiting.
+13-04-2025 21:32:46: Message Queue criada
+13-04-2025 21:32:46: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:46: Miner thread 1 started
+13-04-2025 21:32:46: Miner thread 2 started
+13-04-2025 21:32:46: Miner thread 3 started
+13-04-2025 21:32:46: Miner thread 4 started
+13-04-2025 21:32:46: Miner thread 5 started
+13-04-2025 21:32:47: All miner threads closed. Exiting.
+13-04-2025 21:32:46: Message Queue criada
+13-04-2025 21:32:46: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:32:47: Shared Memory 1 deleted
+13-04-2025 21:32:47: Shared Memory 2 deleted
+13-04-2025 21:32:47: Message Queue deleted
+13-04-2025 21:32:47: Named Pipe VALIDATOR_INPUT deleted
+13-04-2025 21:47:37: Message Queue criada
+13-04-2025 21:47:37: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:47:37: Statistics thread started
+13-04-2025 21:49:03: Statistics thread closed. Exiting.
+13-04-2025 21:47:37: Message Queue criada
+13-04-2025 21:47:37: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:47:37: Validator thread started
+13-04-2025 21:49:03: Validator thread closed. Exiting.
+13-04-2025 21:47:37: Message Queue criada
+13-04-2025 21:47:37: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:47:37: Miner thread 1 started
+13-04-2025 21:47:37: Miner thread 2 started
+13-04-2025 21:47:37: Miner thread 3 started
+13-04-2025 21:47:37: Miner thread 4 started
+13-04-2025 21:47:37: Miner thread 5 started
+13-04-2025 21:49:03: All miner threads closed. Exiting.
+13-04-2025 21:47:37: Message Queue criada
+13-04-2025 21:47:37: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:49:03: Shared Memory 1 deleted
+13-04-2025 21:49:03: Shared Memory 2 deleted
+13-04-2025 21:49:03: Message Queue deleted
+13-04-2025 21:49:03: Named Pipe VALIDATOR_INPUT deleted
+13-04-2025 21:49:08: Message Queue criada
+13-04-2025 21:49:08: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:49:08: Validator thread started
+13-04-2025 21:49:43: Validator thread closed. Exiting.
+13-04-2025 21:49:08: Message Queue criada
+13-04-2025 21:49:08: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:49:08: Statistics thread started
+13-04-2025 21:49:43: Statistics thread closed. Exiting.
+13-04-2025 21:49:08: Message Queue criada
+13-04-2025 21:49:08: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:49:08: Miner thread 1 started
+13-04-2025 21:49:08: Miner thread 2 started
+13-04-2025 21:49:08: Miner thread 3 started
+13-04-2025 21:49:08: Miner thread 4 started
+13-04-2025 21:49:08: Miner thread 5 started
+13-04-2025 21:49:43: All miner threads closed. Exiting.
+13-04-2025 21:49:08: Message Queue criada
+13-04-2025 21:49:08: Named Pipe VALIDATOR_INPUT created
+13-04-2025 21:49:43: Shared Memory 1 deleted
+13-04-2025 21:49:43: Shared Memory 2 deleted
+13-04-2025 21:49:43: Message Queue deleted
+13-04-2025 21:49:43: Named Pipe VALIDATOR_INPUT deleted
