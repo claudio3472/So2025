@@ -16,8 +16,8 @@
 #include <sys/shm.h>
 #include <errno.h> 
 #include <signal.h>
+#include <sys/msg.h>
 
-extern pthread_mutex_t log_mutex;
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;

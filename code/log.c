@@ -1,6 +1,5 @@
 #include "funcs.h"
 
-sem_t *sem_log = NULL;
 FILE *file;
 
 int init_log_things() {

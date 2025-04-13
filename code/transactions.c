@@ -33,6 +33,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+
+    if (sem_transactions == NULL) {
+        sem_transactions = sem_open("/sem_transactions", 0);
+        if (sem_transactions == SEM_FAILED) {
+            perror("sem_open in transactions failed");
+            return -1;
+        }
+    }
+
     // Access shared memory
     int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
 
@@ -50,9 +59,18 @@ int main(int argc, char *argv[]) {
     printf("Shared memory attached successfully.\n");
 
     while(true){
+        if (sem_wait(sem_transactions) == -1) {
+            perror("sem_wait failed");
+            return -1;
+        }
+        //vamos escrever na shared memory aqui
         printf("Transaction with reward %d added\n", reward);
+        sem_post(sem_transactions);
         sleep(sleep_time / 1000);
     }
+
+    
+
 
     return 0;
 }

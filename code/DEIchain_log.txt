@@ -22,3 +22,20 @@
 13-04-2025 12:54:59: All miner threads closed. Exiting.
 13-04-2025 12:54:59: Shared Memory 1 deleted
 13-04-2025 12:54:59: Shared Memory 2 deleted
+13-04-2025 13:57:25: Message Queue criada
+13-04-2025 13:57:25: Statistics thread started
+13-04-2025 13:58:23: Statistics thread closed. Exiting.
+13-04-2025 13:57:25: Message Queue criada
+13-04-2025 13:57:25: Validator thread started
+13-04-2025 13:58:23: Validator thread closed. Exiting.
+13-04-2025 13:57:25: Message Queue criada
+13-04-2025 13:57:25: Miner thread 1 started
+13-04-2025 13:57:25: Miner thread 2 started
+13-04-2025 13:57:25: Miner thread 3 started
+13-04-2025 13:57:25: Miner thread 4 started
+13-04-2025 13:57:25: Miner thread 5 started
+13-04-2025 13:58:23: All miner threads closed. Exiting.
+13-04-2025 13:57:25: Message Queue criada
+13-04-2025 13:58:23: Shared Memory 1 deleted
+13-04-2025 13:58:23: Shared Memory 2 deleted
+13-04-2025 13:58:23: Message Queue deleted

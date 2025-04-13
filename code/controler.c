@@ -10,6 +10,44 @@ transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
 
+int init_trans_sem() {
+    sem_transactions = sem_open("/sem_transactions", O_CREAT, 0777, 1);
+    if (sem_transactions == SEM_FAILED) {
+        perror("sem_open failed");
+        return -1;
+    }
+    printf("sem_transactions initialized");
+    return 0;
+}
+
+int destroy_trans_sem() {
+    if (sem_transactions != NULL && sem_transactions != SEM_FAILED) {
+        sem_close(sem_transactions); 
+        sem_unlink("/sem_transactions");
+    }
+    printf("sem_transactions destroyed");
+    return 0;
+}
+
+int init_block_sem() {
+    sem_blockchain = sem_open("/sem_blockchain", O_CREAT, 0777, 1);
+    if (sem_blockchain == SEM_FAILED) {
+        perror("sem_open failed");
+        return -1;
+    }
+    printf("sem_blockchain initialized");
+    return 0;
+}
+
+int destroy_block_sem() {
+    if (sem_blockchain != NULL && sem_blockchain != SEM_FAILED) {
+        sem_close(sem_blockchain); 
+        sem_unlink("/sem_blockchain");
+    }
+    printf("sem_blockchain destroyed");
+    return 0;
+}
+
 void clean() {
     printf("\nSIGINT detected. Cleaning up...\n");
 
@@ -29,11 +67,21 @@ void clean() {
     logwrite("Message Queue deleted\n");
 
     destroy_log_things();
+    destroy_trans_sem();
+    destroy_block_sem();
+
     exit(0);
 }
 
+
+
+
 int main(int argc, char *argv[]) {
+
     init_log_things();
+    init_trans_sem();
+    init_block_sem();
+
     char fich[BUFFER];
     if(argc != 2){
         printf("comando: %s {config-file}\n", argv[0]);
@@ -85,6 +133,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Shared memory for Transaction Pool
+
     if ((shmid = shmget(key1, TX_POOL_SIZE * sizeof(transactions_Pool), IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - transactions_Pool");
         return 1;
@@ -94,6 +143,7 @@ int main(int argc, char *argv[]) {
         perror("Error: in shmat - transactions_Pool");
         return 1;
     }
+
 
     // Shared memory for Blockchain Ledger
     if ((shmid2 = shmget(key2, BLOCKCHAIN_BLOCKS * sizeof(blockchain_Ledger), IPC_CREAT | 0777)) == -1) {

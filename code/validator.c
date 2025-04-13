@@ -6,6 +6,8 @@ void cleanall(){
 }
 
 int validator(){
+
+    //falta semopen e assim aqui
     logwrite("Validator thread started\n");
     signal(SIGINT, cleanall);
     pause();
