@@ -20,6 +20,8 @@
 extern pthread_mutex_t log_mutex;
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
+extern sem_t *sem_log;
+
 
 typedef struct{
 	int current_block_id;       // ID do bloco atual
@@ -50,6 +52,10 @@ int validator();
 int statistics();
 
 int logwrite(char* line);
+
+int init_log_things(); 
+
+int destroy_log_things(); 
 
 
 

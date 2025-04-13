@@ -1,14 +1,47 @@
-    #include "funcs.h"
+#include "funcs.h"
 
-pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+sem_t *sem_log = NULL;
+FILE *file;
 
-int logwrite(char* line) {
-    pthread_mutex_lock(&log_mutex);
-
-    FILE *file = fopen("DEIchain_log.txt", "a");
+int init_log_things() {
+    sem_log = sem_open("/sem_log", O_CREAT, 0644, 1);
+    if (sem_log == SEM_FAILED) {
+        perror("sem_open failed");
+        return -1;
+    }
+    
+    file = fopen("DEIchain_log.txt", "a");
     if (file == NULL) {
         perror("Error opening file");
-        pthread_mutex_unlock(&log_mutex);
+        destroy_log_things();
+        return -1;
+    }
+    return 0;
+}
+
+int destroy_log_things() {
+    if (sem_log != NULL && sem_log != SEM_FAILED) {
+        sem_close(sem_log); 
+        sem_unlink("/sem_log");
+    }
+
+    fclose(file);
+
+    return 0;
+}
+
+int logwrite(char* line) {
+
+    if (sem_log == NULL) {
+        sem_log = sem_open("/sem_log", 0);
+        if (sem_log == SEM_FAILED) {
+            perror("sem_open in logwrite failed");
+            return -1;
+        }
+    }
+
+    if (sem_wait(sem_log) == -1) {
+        perror("sem_wait failed");
         return -1;
     }
 
@@ -26,10 +59,9 @@ int logwrite(char* line) {
             localTime->tm_mday, localTime->tm_mon + 1, localTime->tm_year + 1900,
             localTime->tm_hour, localTime->tm_min, localTime->tm_sec, line);
 
-    fclose(file);
-    
-    pthread_mutex_unlock(&log_mutex);
 
+    
+    sem_post(sem_log);
 
     return 0;
 }

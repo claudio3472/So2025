@@ -1,4 +1,4 @@
-# Compiler and flags
+
 CC = gcc
 FLAGS = -Wall -Wextra -g -pthread
 

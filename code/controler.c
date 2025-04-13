@@ -5,13 +5,14 @@
 #define key2 4321
 
 
-int shmid,shmid2, finish;
+int shmid, shmid2, mqid;
 transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
 
 void clean() {
     printf("\nSIGINT detected. Cleaning up...\n");
+
     waitpid(pid1, NULL, 0);
     waitpid(pid2, NULL, 0);
     waitpid(pid3, NULL, 0);
@@ -24,18 +25,15 @@ void clean() {
     logwrite("Shared Memory 2 deleted\n");
     ledger = NULL;
 
-    int res = pthread_mutex_destroy(&log_mutex);
-    if (res == 0) {
-        printf("Mutex destroyed successfully.\n");
-    } else if (res == EBUSY) {
-        printf("Mutex destruction failed: Mutex is still in use.\n");
-    } else if (res == EINVAL) {
-        printf("Mutex destruction failed: Mutex is invalid.\n");
-    }
+    msgctl(mqid, IPC_RMID, NULL);
+    logwrite("Message Queue deleted\n");
+
+    destroy_log_things();
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
-    pthread_mutex_init(&log_mutex, NULL);
+    init_log_things();
     char fich[BUFFER];
     if(argc != 2){
         printf("comando: %s {config-file}\n", argv[0]);
@@ -44,7 +42,6 @@ int main(int argc, char *argv[]) {
     strcpy(fich, argv[1]);
 
     int NUM_MINERS, TX_POOL_SIZE, TRANSACTIONS_BLOCK, BLOCKCHAIN_BLOCKS;
-    finish = 0;
     // Open the file for reading
     FILE *file = fopen(fich, "r");
     if (file == NULL) {
@@ -78,6 +75,15 @@ int main(int argc, char *argv[]) {
     printf("TRANSACTIONS_BLOCK = %d\n", TRANSACTIONS_BLOCK);
     printf("BLOCKCHAIN_BLOCKS = %d\n", BLOCKCHAIN_BLOCKS);
 
+    mqid = msgget(IPC_PRIVATE, IPC_CREAT | 0777);
+
+    if (mqid == -1) {
+        printf("msgget didnt process correctly");
+        exit(1);
+    }else{
+        logwrite("Message Queue criada\n");
+    }
+
     // Shared memory for Transaction Pool
     if ((shmid = shmget(key1, TX_POOL_SIZE * sizeof(transactions_Pool), IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - transactions_Pool");
@@ -99,6 +105,8 @@ int main(int argc, char *argv[]) {
         perror("Error: in shmat - blockchain_Ledger");
         return 1;
     }
+
+
 
     pid1 = fork();
     if (pid1 < 0) {
@@ -130,5 +138,4 @@ int main(int argc, char *argv[]) {
 
     pause();
     return 0;
-
 }
