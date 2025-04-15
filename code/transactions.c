@@ -22,7 +22,7 @@ void read_shared_memory() {
     int pool_size = trans_pool->pool_size;  // Get pool size from shared memory
 
     printf("\nReading Shared Memory Content:\n");
-    printf("Current Block ID: %d\n", trans_pool->current_block_id);
+    //printf("Current Block ID: %d\n", trans_pool->current_block_id);
     for (int i = 0; i < pool_size; i++) {
         if (trans_pool->transactions[i].active == 1) {
             printf("Transaction %d: Reward: %d, Timestamp: %ld\n",
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
                 trans_pool->transactions[i].active = 1; 
 
                 printf("Transaction with reward %d added at index %d\n", reward, i);
-                trans_pool->current_block_id++; 
+                //trans_pool->current_block_id++; 
                 inserted = 1;
                 break; 
             }

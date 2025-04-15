@@ -9,6 +9,8 @@ int shmid, shmid2, mqid;
 transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
+int TRANSACTIONS_PER_BLOCK;
+
 
 int init_trans_sem() {
     sem_transactions = sem_open("/sem_transactions", O_CREAT, 0777, 1);
@@ -16,7 +18,7 @@ int init_trans_sem() {
         perror("sem_open failed");
         return -1;
     }
-    printf("sem_transactions initialized");
+    printf("sem_transactions initialized\n");
     return 0;
 }
 
@@ -25,7 +27,7 @@ int destroy_trans_sem() {
         sem_close(sem_transactions); 
         sem_unlink("/sem_transactions");
     }
-    printf("sem_transactions destroyed");
+    printf("sem_transactions destroyed\n");
     return 0;
 }
 
@@ -35,7 +37,7 @@ int init_block_sem() {
         perror("sem_open failed");
         return -1;
     }
-    printf("sem_blockchain initialized");
+    printf("sem_blockchain initialized\n");
     return 0;
 }
 
@@ -44,7 +46,7 @@ int destroy_block_sem() {
         sem_close(sem_blockchain); 
         sem_unlink("/sem_blockchain");
     }
-    printf("sem_blockchain destroyed");
+    printf("sem_blockchain destroyed\n");
     return 0;
 }
 
@@ -160,6 +162,7 @@ int main(int argc, char *argv[]) {
     }
 
     trans_Pool->pool_size = TX_POOL_SIZE;
+    trans_Pool->max_trans_per_block = TRANSACTIONS_BLOCK;
 
 
     // Shared memory for Blockchain Ledger

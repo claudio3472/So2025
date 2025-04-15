@@ -21,6 +21,8 @@
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
+#define HASH_SIZE 100
+
 
 
 typedef struct {
@@ -29,10 +31,10 @@ typedef struct {
     int active; 
 } transaction;
 
-typedef struct {
-    int current_block_id;       
+typedef struct {      
     int count;
-    int pool_size;                 
+    int pool_size;
+    int max_trans_per_block;                 
     transaction transactions[]; 
 } transactions_Pool;
 
@@ -44,11 +46,22 @@ have the following:
 touches the Transaction Pool. The Transaction Pool size is defined by the
 configuration size.
 */
+typedef struct {
+    int block_id;
+    int miner_id;
+    int num_transactions;
+    char hash[HASH_SIZE];
+    time_t timestamp;
+    transaction transactions[];  
+} block;
+
 
 typedef struct
 {
 	//TBD
     int count; 
+    int actual_block_id;
+    int last_block_id;
     //possivelmente vai ser preciso criar uma struck to tipo blocos com as cenas que vão ser pedidas no enunciado
 } blockchain_Ledger;
 
