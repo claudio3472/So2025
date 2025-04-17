@@ -8,8 +8,17 @@ transactions_Pool *trans_pool = NULL;
 
 typedef unsigned char BYTE;
 
+/*
+void calc_sha_256(BYTE hash_out[HASH_SIZE], const void *data, size_t len) {
+    SHA256_CTX ctx;
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, data, len);
+    SHA256_Final(hash_out, &ctx);
+}
+*/
+
 // Calculate SHA-256 hash
-void calc_sha_256(BYTE hash_out[SHA256_DIGEST_LENGTH], const void *data, size_t len) {
+void calc_sha_256(BYTE hash_out[HASH_SIZE], const void *data, size_t len) {
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();  // Create new context
     if (mdctx == NULL) {
         perror("Error creating EVP_MD_CTX");

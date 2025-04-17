@@ -17,6 +17,9 @@ int validator(){
     //que ela ja esteja num bloco, secalhar discutir a possibilidade de adicionar uma variavel a dizer que já foi pega por um miner????
 
     //não percebi um cu de como o valiador vai verificar o Pow do hash do sla oq com o do anterior mas dps vê-se
+
+
+    //criar um processo filho causo passse um certo threshold
     
     logwrite("Validator thread started\n");
     signal(SIGINT, cleanall);

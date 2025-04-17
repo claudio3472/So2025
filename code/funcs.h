@@ -23,7 +23,7 @@
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
-#define HASH_SIZE SHA256_DIGEST_LENGTH 
+#define HASH_SIZE SHA256_DIGEST_LENGTH * 2 + 1 
 
 typedef struct {
     char tx_id[32];       
@@ -43,8 +43,8 @@ typedef struct {
 
 typedef struct {
     uint32_t contents_length;
-    uint8_t contents_hash[SHA256_DIGEST_LENGTH];
-    uint8_t previous_hash[SHA256_DIGEST_LENGTH];
+    uint8_t contents_hash[HASH_SIZE];
+    uint8_t previous_hash[HASH_SIZE];
     uint32_t timestamp;
     uint32_t nonce;
 } block_header_t;
