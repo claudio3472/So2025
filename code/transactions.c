@@ -2,6 +2,9 @@
 
 #define SHM_KEY 1234
 
+
+int tx_counter = 0;
+
 transactions_Pool *trans_pool = NULL;
 
 void clean() {
@@ -18,15 +21,17 @@ void clean() {
 
 
 void read_shared_memory() {
-    // Read the shared memory and print the contents for debugging
-    int pool_size = trans_pool->pool_size;  // Get pool size from shared memory
+    int pool_size = trans_pool->pool_size;
+    printf("\n--- Reading Shared Memory ---\n");
 
-    printf("\nReading Shared Memory Content:\n");
-    //printf("Current Block ID: %d\n", trans_pool->current_block_id);
     for (int i = 0; i < pool_size; i++) {
-        if (trans_pool->transactions[i].active == 1) {
-            printf("Transaction %d: Reward: %d, Timestamp: %ld\n",
-                i, trans_pool->transactions[i].reward, trans_pool->transactions[i].timestamp);
+        if (trans_pool->transactions[i].empty == 0) {
+            printf("Transaction %d:\n", i);
+            printf("  ID: %s\n", trans_pool->transactions[i].tx_id);
+            printf("  Reward: %d\n", trans_pool->transactions[i].reward);
+            printf("  Value: %d\n", trans_pool->transactions[i].value);
+            printf("  Timestamp: %ld\n", trans_pool->transactions[i].timestamp);
+            printf("  Age: %d\n", trans_pool->transactions[i].age);
         }
     }
 }
@@ -78,30 +83,42 @@ int main(int argc, char *argv[]) {
             perror("sem_wait failed");
             return -1;
         }
-
+    
         int inserted = 0;
-        int pool_size = trans_pool->pool_size; 
+        int pool_size = trans_pool->pool_size;
+    
         for (int i = 0; i < pool_size; i++) {
-            if (trans_pool->transactions[i].active == 0) {
+            if (trans_pool->transactions[i].empty == 1) {  // Slot is available
+    
+                // Generate a unique TX ID: PID + Counter
+                snprintf(trans_pool->transactions[i].tx_id, sizeof(trans_pool->transactions[i].tx_id),
+                         "TX_%d_%d", getpid(), tx_counter++);
+    
                 trans_pool->transactions[i].reward = reward;
+                trans_pool->transactions[i].value = rand() % 100 + 1;
                 trans_pool->transactions[i].timestamp = time(NULL);
-                trans_pool->transactions[i].active = 1; 
-
-                printf("Transaction with reward %d added at index %d\n", reward, i);
-                //trans_pool->current_block_id++; 
+                trans_pool->transactions[i].age = 0; 
+                trans_pool->transactions[i].empty = 0;
+    
+                printf("Transaction added at index %d -> ID: %s | Reward: %d | Value: %d\n",
+                       i,
+                       trans_pool->transactions[i].tx_id,
+                       trans_pool->transactions[i].reward,
+                       trans_pool->transactions[i].value);
+    
                 inserted = 1;
-                break; 
+                break;
             }
         }
-
+    
         if (!inserted) {
             printf("Transaction Pool is full. Skipping this transaction.\n");
         }
-        sem_post(sem_transactions); 
-        sleep(sleep_time / 1000); 
+    
+        sem_post(sem_transactions);
+        sleep(sleep_time / 1000);
         read_shared_memory();
     }
-
     
 
 

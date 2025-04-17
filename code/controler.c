@@ -164,6 +164,11 @@ int main(int argc, char *argv[]) {
     trans_Pool->pool_size = TX_POOL_SIZE;
     trans_Pool->max_trans_per_block = TRANSACTIONS_BLOCK;
 
+    for (int i = 0; i < TX_POOL_SIZE; i++) {
+        trans_Pool->transactions[i].empty = 1;
+        trans_Pool->transactions[i].age = 0;   
+    }
+
 
     // Shared memory for Blockchain Ledger
     if ((shmid2 = shmget(key2, BLOCKCHAIN_BLOCKS * sizeof(blockchain_Ledger), IPC_CREAT | 0777)) == -1) {
@@ -175,8 +180,6 @@ int main(int argc, char *argv[]) {
         perror("Error: in shmat - blockchain_Ledger");
         return 1;
     }
-
-
 
     pid1 = fork();
     if (pid1 < 0) {

@@ -17,18 +17,21 @@
 #include <errno.h> 
 #include <signal.h>
 #include <sys/msg.h>
+#include <openssl/sha.h> 
+#include <openssl/evp.h>
 
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
-#define HASH_SIZE 100
-
-
+#define HASH_SIZE SHA256_DIGEST_LENGTH 
 
 typedef struct {
-    int reward;
-    time_t timestamp;
-    int active; 
+    char tx_id[32];       
+    int reward;          
+    int value;            
+    time_t timestamp;     
+    int age;             
+    int empty; 
 } transaction;
 
 typedef struct {      
@@ -37,6 +40,14 @@ typedef struct {
     int max_trans_per_block;                 
     transaction transactions[]; 
 } transactions_Pool;
+
+typedef struct {
+    uint32_t contents_length;
+    uint8_t contents_hash[SHA256_DIGEST_LENGTH];
+    uint8_t previous_hash[SHA256_DIGEST_LENGTH];
+    uint32_t timestamp;
+    uint32_t nonce;
+} block_header_t;
 
 /*
 transactions_list: Current transactions awaiting validation. Each entry on this list must
