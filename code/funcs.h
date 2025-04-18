@@ -23,7 +23,7 @@
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
-#define HASH_SIZE SHA256_DIGEST_LENGTH * 2 + 1 
+#define HASH_SIZE (SHA256_DIGEST_LENGTH * 2 + 1)
 
 typedef struct {
     char tx_id[32];       
@@ -41,6 +41,7 @@ typedef struct {
     transaction transactions[]; 
 } transactions_Pool;
 
+/*
 typedef struct {
     uint32_t contents_length;
     uint8_t contents_hash[HASH_SIZE];
@@ -49,22 +50,37 @@ typedef struct {
     uint32_t nonce;
 } block_header_t;
 
-/*
-transactions_list: Current transactions awaiting validation. Each entry on this list must
-have the following:
-■ empty: field indicating whether the position is available or not
-■ age: field that starts with zero and is incremented every time the Validator
-touches the Transaction Pool. The Transaction Pool size is defined by the
-configuration size.
-*/
+
 typedef struct {
     int block_id;
     int miner_id;
     int num_transactions;
     char hash[HASH_SIZE];
     time_t timestamp;
-    transaction transactions[];  
+    transaction transactions[];
+     
 } block;
+*/
+typedef struct {
+    int block_id;
+    int miner_id;
+    int num_transactions;
+    time_t timestamp;
+    unsigned int nonce;
+           
+    char previous_hash[HASH_SIZE];       
+    char hash[HASH_SIZE];               
+
+    transaction transactions[];
+
+} block;
+
+typedef struct {
+    char hash[HASH_SIZE];
+    double elapsed_time;
+    int operations;
+    int error;
+} PoWResult;
 
 
 typedef struct

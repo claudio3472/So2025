@@ -1,6 +1,7 @@
 #include "funcs.h"
 #define SHM_KEY 1234
-
+#define POW_MAX_OPS 1000000
+#define SHA256_DIGEST_LENGTH 32  // Tamanho real do hash SHA-256 em bytes
 
 pthread_t *threads;
 int num_threads;
@@ -8,49 +9,106 @@ transactions_Pool *trans_pool = NULL;
 
 typedef unsigned char BYTE;
 
-/*
-void calc_sha_256(BYTE hash_out[HASH_SIZE], const void *data, size_t len) {
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, data, len);
-    SHA256_Final(hash_out, &ctx);
-}
-*/
-
-// Calculate SHA-256 hash
-void calc_sha_256(BYTE hash_out[HASH_SIZE], const void *data, size_t len) {
-    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();  // Create new context
+void calc_sha_256(BYTE hash_out[SHA256_DIGEST_LENGTH], const void *data, size_t len) {
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
     if (mdctx == NULL) {
         perror("Error creating EVP_MD_CTX");
         return;
     }
 
-    // Initialize the context for SHA-256
-    if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1) {
-        perror("Error initializing digest context");
+    if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1 ||
+        EVP_DigestUpdate(mdctx, data, len) != 1 ||
+        EVP_DigestFinal_ex(mdctx, hash_out, NULL) != 1) {
+        perror("Error computing digest");
         EVP_MD_CTX_free(mdctx);
         return;
     }
 
-    // Update the context with the data to hash
-    if (EVP_DigestUpdate(mdctx, data, len) != 1) {
-        perror("Error updating digest context");
-        EVP_MD_CTX_free(mdctx);
-        return;
-    }
-
-    // Finalize the hash and store it in hash_out
-    unsigned int out_len = SHA256_DIGEST_LENGTH;
-    if (EVP_DigestFinal_ex(mdctx, hash_out, &out_len) != 1) {
-        perror("Error finalizing digest context");
-        EVP_MD_CTX_free(mdctx);
-        return;
-    }
-
-    EVP_MD_CTX_free(mdctx);  // Free the context
+    EVP_MD_CTX_free(mdctx);
 }
 
-// Debug print hash
+void compute_block_hash(block *blk, int tx_count, BYTE hash_out[SHA256_DIGEST_LENGTH]) {
+    size_t buffer_size = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE + sizeof(transaction) * tx_count;
+    BYTE *buffer = malloc(buffer_size);
+    if (!buffer) {
+        perror("Failed to allocate memory");
+        return;
+    }
+
+    size_t offset = 0;
+    memcpy(buffer + offset, &blk->block_id, sizeof(int)); offset += sizeof(int);
+    memcpy(buffer + offset, &blk->miner_id, sizeof(int)); offset += sizeof(int);
+    memcpy(buffer + offset, &blk->num_transactions, sizeof(int)); offset += sizeof(int);
+    memcpy(buffer + offset, &blk->timestamp, sizeof(time_t)); offset += sizeof(time_t);
+    memcpy(buffer + offset, &blk->nonce, sizeof(unsigned int)); offset += sizeof(unsigned int);
+    memcpy(buffer + offset, blk->previous_hash, HASH_SIZE); offset += HASH_SIZE;
+    memcpy(buffer + offset, blk->transactions, sizeof(transaction) * tx_count); offset += sizeof(transaction) * tx_count;
+
+    if (offset != buffer_size) {
+        fprintf(stderr, "Hashing buffer size mismatch!\n");
+        free(buffer);
+        return;
+    }
+
+    calc_sha_256(hash_out, buffer, buffer_size);
+    free(buffer);
+}
+
+int hash_meets_difficulty(BYTE hash[SHA256_DIGEST_LENGTH], int difficulty) {
+    char hash_hex[SHA256_DIGEST_LENGTH * 2 + 1];
+
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        sprintf(&hash_hex[i * 2], "%02x", hash[i]);
+    }
+    hash_hex[64] = '\0';
+
+    for (int i = 0; i < difficulty; i++) {
+        if (hash_hex[i] != '0') return 0;
+    }
+    return 1;
+}
+
+PoWResult proof_of_work(block *block, int tx_count, int transactions_per_block) {
+    PoWResult result;
+    result.error = 1;
+    result.operations = 0;
+    result.elapsed_time = 0.0;
+    memset(result.hash, 0, HASH_SIZE);
+
+    int difficulty = 0;
+    for (int i = 0; i < transactions_per_block; i++) {
+        if (block->transactions[i].reward > difficulty) {
+            difficulty = block->transactions[i].reward;
+        }
+    }
+
+    BYTE hash[SHA256_DIGEST_LENGTH];
+    clock_t start_time = clock();
+
+    for (unsigned int nonce = 0; nonce < POW_MAX_OPS; nonce++) {
+        block->nonce = nonce;
+        compute_block_hash(block, tx_count, hash);
+        result.operations++;
+
+        if (hash_meets_difficulty(hash, difficulty)) {
+            memcpy(result.hash, hash, SHA256_DIGEST_LENGTH);
+            result.elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+            result.error = 0;
+
+            // Armazena o hash final no bloco
+            for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+                sprintf(&block->hash[i * 2], "%02x", hash[i]);
+            }
+            block->hash[HASH_SIZE - 1] = '\0';
+
+            return result;
+        }
+    }
+
+    result.elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+    return result;
+}
+
 void print_hash(BYTE hash[SHA256_DIGEST_LENGTH]) {
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%02x", hash[i]);
@@ -59,7 +117,6 @@ void print_hash(BYTE hash[SHA256_DIGEST_LENGTH]) {
 }
 
 void *miner_thread() {
-    // Access shared memory
     int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
     if (shmid == -1) {
         perror("Error: Unable to access shared memory");
@@ -94,7 +151,7 @@ void *miner_thread() {
         }
 
         if (available_tx_count < max_trans_per_block) {
-            sem_post(sem_transactions); 
+            sem_post(sem_transactions);
             printf("\nNot enough transactions, sleeping...\n");
             sleep(3);
             continue;
@@ -111,19 +168,21 @@ void *miner_thread() {
 
         sem_post(sem_transactions);
 
-        // Build block
         block new_block;
-        new_block.block_id = rand() % 1000000;  
+        new_block.block_id = rand() % 1000000;
         new_block.num_transactions = tx_count;
-        new_block.timestamp = time(NULL);
         memcpy(new_block.transactions, selected, sizeof(transaction) * tx_count);
 
-        // Hash the block content
-        calc_sha_256((BYTE *)new_block.hash, selected, sizeof(transaction) * tx_count);
-        printf("Miner created a block with %d transactions:\n", tx_count);
-        print_hash((BYTE *)new_block.hash);
+        PoWResult r;
+        do {
+            new_block.timestamp = time(NULL);
+            r = proof_of_work(&new_block, tx_count, max_trans_per_block);
+        } while (r.error == 1);
 
-        // TODO: Send block to validator via pipe or queue
+        printf("Miner created a block with %d transactions:\n", tx_count);
+        print_hash((BYTE *)r.hash);
+
+        //mandar bloco para o validator
     }
 
     return NULL;
