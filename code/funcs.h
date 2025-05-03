@@ -20,10 +20,15 @@
 #include <openssl/sha.h> 
 #include <openssl/evp.h>
 
+#define HASH_SIZE (SHA256_DIGEST_LENGTH * 2 + 1)
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
-#define HASH_SIZE (SHA256_DIGEST_LENGTH * 2 + 1)
+extern pthread_mutex_t prev_hash_mutex; 
+
+extern char prev_hash[HASH_SIZE];
+
+
 
 typedef struct {
     char tx_id[32];       
@@ -67,8 +72,8 @@ typedef struct {
     int num_transactions;
     time_t timestamp;
     unsigned int nonce;
-           
-    char previous_hash[HASH_SIZE];       
+
+    char previous_hash[HASH_SIZE];  
     char hash[HASH_SIZE];               
 
     transaction transactions[];

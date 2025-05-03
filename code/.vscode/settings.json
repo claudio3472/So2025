@@ -4,7 +4,8 @@
         "stdbool.h": "c",
         "shm.h": "c",
         "stat.h": "c",
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "msg.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
