@@ -46,26 +46,6 @@ typedef struct {
     transaction transactions[]; 
 } transactions_Pool;
 
-/*
-typedef struct {
-    uint32_t contents_length;
-    uint8_t contents_hash[HASH_SIZE];
-    uint8_t previous_hash[HASH_SIZE];
-    uint32_t timestamp;
-    uint32_t nonce;
-} block_header_t;
-
-
-typedef struct {
-    int block_id;
-    int miner_id;
-    int num_transactions;
-    char hash[HASH_SIZE];
-    time_t timestamp;
-    transaction transactions[];
-     
-} block;
-*/
 typedef struct {
     int block_id;
     int miner_id;

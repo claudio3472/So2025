@@ -218,11 +218,33 @@ void *miner_thread() {
             printf("Miner created a block with %d transactions:\n", tx_count);
             printf("Previous Hash: %s\n", new_block.previous_hash);
             printf("Current Hash : %s\n", new_block.hash);
-            printf("Nonce:\n", new_block.nonce);
+            printf("Nonce:%d \n", new_block.nonce);
             free(serialized_block);
         } else {
             fprintf(stderr, "Failed to serialize the block.\n");
         }
+
+
+        int fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
+        if (fd == -1) {
+            perror("open");
+            exit(1);
+        }
+            
+        ssize_t bytes_written = write(fd, serialized_block, serialized_block_size);
+        if (bytes_written < 0) {
+            perror("write");
+            close(fd);
+            exit(1);
+        }
+
+        if ((size_t)bytes_written != serialized_block_size) {
+            fprintf(stderr, "Partial write occurred!\n");
+            close(fd);
+            exit(1);
+        }
+
+        
     }
 
     return NULL;
