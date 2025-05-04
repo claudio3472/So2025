@@ -95,11 +95,11 @@ PoWResult proof_of_work(block *block, int tx_count, int transactions_per_block) 
             result.elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
             result.error = 0;
 
-            // Armazena o hash final no bloco
+            // Armazena o hash final no bloco em hexadecimal
             for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
                 sprintf(&block->hash[i * 2], "%02x", hash[i]);
             }
-            block->hash[HASH_SIZE - 1] = '\0';
+            block->hash[SHA256_DIGEST_LENGTH * 2] = '\0';  // NULL terminator
 
             return result;
         }
@@ -112,46 +112,25 @@ PoWResult proof_of_work(block *block, int tx_count, int transactions_per_block) 
 void print_hash(BYTE hash[SHA256_DIGEST_LENGTH]) {
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%02x", hash[i]);
-        sprintf(&prev_hash[i], "%02x", hash[i]);
     }
-    prev_hash[SHA256_DIGEST_LENGTH * 2] = '\0';
     printf("\n");
 }
 
 unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
-    // Calculate the buffer size based on the block's structure
     *sz_buf = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE + sizeof(transaction) * blk->num_transactions;
-    
+
     unsigned char *buffer = malloc(*sz_buf);
     if (!buffer) return NULL;
 
     unsigned char *p = buffer;
 
-    // Serialize block ID
-    memcpy(p, &blk->block_id, sizeof(int));
-    p += sizeof(int);
+    memcpy(p, &blk->block_id, sizeof(int)); p += sizeof(int);
+    memcpy(p, &blk->miner_id, sizeof(int)); p += sizeof(int);
+    memcpy(p, &blk->num_transactions, sizeof(int)); p += sizeof(int);
+    memcpy(p, &blk->timestamp, sizeof(time_t)); p += sizeof(time_t);
+    memcpy(p, &blk->nonce, sizeof(unsigned int)); p += sizeof(unsigned int);
+    memcpy(p, blk->previous_hash, HASH_SIZE); p += HASH_SIZE;
 
-    // Serialize miner ID
-    memcpy(p, &blk->miner_id, sizeof(int));
-    p += sizeof(int);
-
-    // Serialize number of transactions
-    memcpy(p, &blk->num_transactions, sizeof(int));
-    p += sizeof(int);
-
-    // Serialize timestamp
-    memcpy(p, &blk->timestamp, sizeof(time_t));
-    p += sizeof(time_t);
-
-    // Serialize nonce
-    memcpy(p, &blk->nonce, sizeof(unsigned int));
-    p += sizeof(unsigned int);
-
-    // Serialize previous block hash
-    memcpy(p, blk->previous_hash, HASH_SIZE);
-    p += HASH_SIZE;
-
-    // Serialize transactions
     for (int i = 0; i < blk->num_transactions; ++i) {
         memcpy(p, &blk->transactions[i], sizeof(transaction));
         p += sizeof(transaction);
@@ -213,8 +192,9 @@ void *miner_thread() {
         sem_post(sem_transactions);
 
         pthread_mutex_lock(&prev_hash_mutex);
+
         block new_block;
-         
+
         strcpy(new_block.previous_hash, prev_hash);  
 
         new_block.block_id = rand() % 1000000;
@@ -227,26 +207,26 @@ void *miner_thread() {
             r = proof_of_work(&new_block, tx_count, max_trans_per_block);
         } while (r.error == 1);
 
-        // Serialize the mined block first
+        // Atualiza prev_hash com o hash gerado
+        strcpy(prev_hash, new_block.hash);
+
+        pthread_mutex_unlock(&prev_hash_mutex);
+
         size_t serialized_block_size = 0;
         unsigned char *serialized_block = serialize_block(&new_block, &serialized_block_size);
         if (serialized_block) {
-            printf("Serialized block size: %zu bytes\n", serialized_block_size);
             printf("Miner created a block with %d transactions:\n", tx_count);
             printf("Previous Hash: %s\n", new_block.previous_hash);
-            print_hash((BYTE *)r.hash);
-
+            printf("Current Hash : %s\n", new_block.hash);
+            printf("Nonce:\n", new_block.nonce);
             free(serialized_block);
         } else {
             fprintf(stderr, "Failed to serialize the block.\n");
         }
-        pthread_mutex_unlock(&prev_hash_mutex);
-
     }
 
     return NULL;
 }
-
 
 void cleanup() {
     for (int i = 0; i < num_threads; i++) {
