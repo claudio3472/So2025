@@ -124,12 +124,18 @@ unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
 
     unsigned char *p = buffer;
 
-    memcpy(p, &blk->block_id, sizeof(int)); p += sizeof(int);
-    memcpy(p, &blk->miner_id, sizeof(int)); p += sizeof(int);
-    memcpy(p, &blk->num_transactions, sizeof(int)); p += sizeof(int);
-    memcpy(p, &blk->timestamp, sizeof(time_t)); p += sizeof(time_t);
-    memcpy(p, &blk->nonce, sizeof(unsigned int)); p += sizeof(unsigned int);
-    memcpy(p, blk->previous_hash, HASH_SIZE); p += HASH_SIZE;
+    memcpy(p, &blk->block_id, sizeof(int));
+    p += sizeof(int);
+    memcpy(p, &blk->miner_id, sizeof(int)); 
+    p += sizeof(int);
+    memcpy(p, &blk->num_transactions, sizeof(int));
+    p += sizeof(int);
+    memcpy(p, &blk->timestamp, sizeof(time_t)); 
+    p += sizeof(time_t);
+    memcpy(p, &blk->nonce, sizeof(unsigned int)); 
+    p += sizeof(unsigned int);
+    memcpy(p, blk->previous_hash, HASH_SIZE); 
+    p += HASH_SIZE;
 
     for (int i = 0; i < blk->num_transactions; ++i) {
         memcpy(p, &blk->transactions[i], sizeof(transaction));
@@ -140,6 +146,13 @@ unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
 }
 
 void *miner_thread() {
+    int fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
+     
+    if (fd == -1) {
+        perror("open");
+        exit(1);
+    }
+
     int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
     if (shmid == -1) {
         perror("Error: Unable to access shared memory");
@@ -151,9 +164,14 @@ void *miner_thread() {
         perror("Error: Unable to attach shared memory");
         return NULL;
     }
-    printf("Shared memory attached successfully.\n");
+    //printf("Shared memory attached successfully.\n");
+
+    int tama = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE + sizeof(transaction) * trans_pool->max_trans_per_block;
+    
+    write(fd, &tama, sizeof(int));
 
     while (1) {
+        
         if (sem_wait(sem_transactions) == -1) {
             perror("sem_wait failed");
             return NULL;
@@ -175,7 +193,7 @@ void *miner_thread() {
 
         if (available_tx_count < max_trans_per_block) {
             sem_post(sem_transactions);
-            printf("\nNot enough transactions, sleeping...\n");
+            //printf("\nNot enough transactions, sleeping...\n");
             sleep(3);
             continue;
         }
@@ -215,21 +233,18 @@ void *miner_thread() {
         size_t serialized_block_size = 0;
         unsigned char *serialized_block = serialize_block(&new_block, &serialized_block_size);
         if (serialized_block) {
+            /*
             printf("Miner created a block with %d transactions:\n", tx_count);
             printf("Previous Hash: %s\n", new_block.previous_hash);
             printf("Current Hash : %s\n", new_block.hash);
             printf("Nonce:%d \n", new_block.nonce);
+            */
             free(serialized_block);
         } else {
             fprintf(stderr, "Failed to serialize the block.\n");
         }
 
-
-        int fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
-        if (fd == -1) {
-            perror("open");
-            exit(1);
-        }
+        printf("Sending block of size: %zu\n", serialized_block_size);
             
         ssize_t bytes_written = write(fd, serialized_block, serialized_block_size);
         if (bytes_written < 0) {
@@ -238,13 +253,15 @@ void *miner_thread() {
             exit(1);
         }
 
+        fflush(stdout);
+        printf("--------------------------%ld\n", bytes_written);
+        
         if ((size_t)bytes_written != serialized_block_size) {
             fprintf(stderr, "Partial write occurred!\n");
             close(fd);
             exit(1);
         }
 
-        
     }
 
     return NULL;

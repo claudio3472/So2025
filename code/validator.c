@@ -6,9 +6,8 @@ void cleanall(){
 }
 
 int validator(){
-
+    int num;
     //falta semopen e assim aqui
-    char buffer[1024];
     int fd = open("/tmp/VALIDATOR_INPUT", O_RDONLY);
     if (fd == -1) {
         perror("Erro ao abrir o pipe para leitura");
@@ -17,21 +16,46 @@ int validator(){
 
     printf("Validator: Pipe aberto, à espera de dados...\n");
 
+    read(fd, &num, sizeof(num));
+    printf("..........%d\n", num);
+
     while (1) {
-        ssize_t bytes_read = read(fd, buffer, sizeof(buffer));
-        if (bytes_read > 0) {
+        char *endptr;
+        
+
+        char buffer[num];
+        ssize_t total_read = 0;
+        while (total_read < num) {
+            ssize_t r = read(fd, buffer + total_read, num - total_read);
+
+            long value = strtol(buffer, &endptr, 10);
+            if (endptr != buffer) {
+                continue;
+            }
+
+            if (r < 0) {
+                perror("Erro ao ler do pipe");
+                break;
+            } else if (r == 0) {
+                // Writer closed the pipe
+                fprintf(stderr, "Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, num);
+                break;
+            }
+            total_read += r;
+        }
+
+        printf("->%zu\n", total_read);
+        if (total_read > 0) {
             // Lê e processa os dados recebidos
-            printf("Validator recebeu %zd bytes\n", bytes_read);
+            printf("Validator recebeu %zd bytes\n", total_read);
 
             // Aqui fazes a deserialização, validação, etc.
             // Exemplo: printar o conteúdo como string (se aplicável)
-            buffer[bytes_read] = '\0'; // só se for texto
+            buffer[total_read] = '\0'; // só se for texto
             printf("Conteúdo: %s\n", buffer);
 
-        } else if (bytes_read == 0) {
-            // Escritor fechou o pipe
-            printf("Validator: Escritor fechou o pipe. A terminar...\n");
-            break;
+        } else if (total_read == 0) {
+            continue;
         } else {
             perror("Erro ao ler do pipe");
             break;
