@@ -48,7 +48,7 @@ typedef struct {
 
 typedef struct {
     int block_id;
-    int miner_id;
+    long int miner_id;
     int num_transactions;
     time_t timestamp;
     unsigned int nonce;

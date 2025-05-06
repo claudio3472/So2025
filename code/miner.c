@@ -117,7 +117,7 @@ void print_hash(BYTE hash[SHA256_DIGEST_LENGTH]) {
 }
 
 unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
-    *sz_buf = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE + sizeof(transaction) * blk->num_transactions;
+    *sz_buf = sizeof(int) * 2 +  sizeof(long int) + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE *2 + sizeof(transaction) * blk->num_transactions;
 
     unsigned char *buffer = malloc(*sz_buf);
     if (!buffer) return NULL;
@@ -126,8 +126,8 @@ unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
 
     memcpy(p, &blk->block_id, sizeof(int));
     p += sizeof(int);
-    memcpy(p, &blk->miner_id, sizeof(int)); 
-    p += sizeof(int);
+    memcpy(p, &blk->miner_id, sizeof(long int)); 
+    p += sizeof(long int);
     memcpy(p, &blk->num_transactions, sizeof(int));
     p += sizeof(int);
     memcpy(p, &blk->timestamp, sizeof(time_t)); 
@@ -135,6 +135,8 @@ unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
     memcpy(p, &blk->nonce, sizeof(unsigned int)); 
     p += sizeof(unsigned int);
     memcpy(p, blk->previous_hash, HASH_SIZE); 
+    p += HASH_SIZE;
+    memcpy(p, blk->hash, HASH_SIZE); 
     p += HASH_SIZE;
 
     for (int i = 0; i < blk->num_transactions; ++i) {
@@ -144,6 +146,40 @@ unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
 
     return buffer;
 }
+
+void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
+    const unsigned char *p = buffer;
+
+    int block_id, num_transactions;
+    long int miner_id;
+    time_t timestamp;
+    unsigned int nonce;
+    char previous_hash[HASH_SIZE];
+    char hash[HASH_SIZE];
+
+    memcpy(&block_id, p, sizeof(int)); p += sizeof(int);
+    memcpy(&miner_id, p, sizeof(long int)); p += sizeof(long int);
+    memcpy(&num_transactions, p, sizeof(int)); p += sizeof(int);
+    memcpy(&timestamp, p, sizeof(time_t)); p += sizeof(time_t);
+    memcpy(&nonce, p, sizeof(unsigned int)); p += sizeof(unsigned int);
+    memcpy(previous_hash, p, HASH_SIZE); p += HASH_SIZE;
+    memcpy(hash, p, HASH_SIZE); p += HASH_SIZE;
+
+    
+    printf("========== Serialized Block Info ==========\n");
+    printf("Block ID     : %d\n", block_id);
+    printf("Miner ID     : %ld\n", miner_id);
+    printf("Transactions : %d\n", num_transactions);
+    printf("Timestamp    : %ld (%s)", timestamp, ctime(&timestamp));
+    printf("Nonce        : %u\n", nonce);
+    printf("Prev Hash    : %s\n", previous_hash);
+    printf("Hash    : %s\n", hash);
+
+    printf("===========================================\n");
+    
+
+}
+
 
 void *miner_thread() {
     int fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
@@ -166,7 +202,7 @@ void *miner_thread() {
     }
     //printf("Shared memory attached successfully.\n");
 
-    int tama = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE + sizeof(transaction) * trans_pool->max_trans_per_block;
+    int tama = sizeof(int) * 2 + sizeof(long int)  + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE *2 + sizeof(transaction) * trans_pool->max_trans_per_block;
     
     write(fd, &tama, sizeof(int));
 
@@ -211,27 +247,45 @@ void *miner_thread() {
 
         pthread_mutex_lock(&prev_hash_mutex);
 
-        block new_block;
+        block *new_block = malloc(sizeof(block) + sizeof(transaction) * tx_count);
+        if (!new_block) {
+            perror("malloc");
+            exit(1);
+        }
 
-        strcpy(new_block.previous_hash, prev_hash);  
+        strcpy(new_block->previous_hash, prev_hash);  
 
-        new_block.block_id = rand() % 1000000;
-        new_block.num_transactions = tx_count;
-        memcpy(new_block.transactions, selected, sizeof(transaction) * tx_count);
+        new_block->block_id = rand() % 1000000;
+        pthread_t thread_id = pthread_self();
+        new_block->miner_id = getpid() + (long int)thread_id;
+        new_block->num_transactions = tx_count;
+        memcpy(new_block->transactions, selected, sizeof(transaction) * tx_count);
 
         PoWResult r;
         do {
-            new_block.timestamp = time(NULL);
-            r = proof_of_work(&new_block, tx_count, max_trans_per_block);
+            new_block->timestamp = time(NULL);
+            r = proof_of_work(new_block, tx_count, max_trans_per_block);
         } while (r.error == 1);
 
-        // Atualiza prev_hash com o hash gerado
-        strcpy(prev_hash, new_block.hash);
+        strcpy(prev_hash, new_block->hash);
+        /*
+        printf("!!!!!!!!!!!!!!!!!Block Info!!!!!!!!!!!!!!!!!\n");
+        printf("Block ID     : %d\n", new_block->block_id);
+        printf("Miner ID     : %ld\n", new_block->miner_id);
+        printf("Transactions : %d\n", new_block->num_transactions);
+        printf("Timestamp    : %ld \n", new_block->timestamp);
+        printf("Nonce        : %u\n", new_block->nonce);
+        printf("Prev Hash    : %s\n", new_block->previous_hash);
+        printf("Hash    : %s\n", new_block->hash);
+
+        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        */
 
         pthread_mutex_unlock(&prev_hash_mutex);
 
         size_t serialized_block_size = 0;
-        unsigned char *serialized_block = serialize_block(&new_block, &serialized_block_size);
+        unsigned char *serialized_block = serialize_block(new_block, &serialized_block_size);
+
         if (serialized_block) {
             /*
             printf("Miner created a block with %d transactions:\n", tx_count);
@@ -239,13 +293,15 @@ void *miner_thread() {
             printf("Current Hash : %s\n", new_block.hash);
             printf("Nonce:%d \n", new_block.nonce);
             */
-            free(serialized_block);
+            
         } else {
             fprintf(stderr, "Failed to serialize the block.\n");
         }
 
-        printf("Sending block of size: %zu\n", serialized_block_size);
-            
+        //printf("Sending block of size: %zu\n", serialized_block_size);
+        
+        debug_print_serialized_block(serialized_block, serialized_block_size);
+
         ssize_t bytes_written = write(fd, serialized_block, serialized_block_size);
         if (bytes_written < 0) {
             perror("write");
@@ -254,13 +310,16 @@ void *miner_thread() {
         }
 
         fflush(stdout);
-        printf("--------------------------%ld\n", bytes_written);
+        //printf("--------------------------%ld\n", bytes_written);
         
         if ((size_t)bytes_written != serialized_block_size) {
-            fprintf(stderr, "Partial write occurred!\n");
+            printf("Partial write occurred!\n");
             close(fd);
             exit(1);
         }
+        free(new_block);
+        free(serialized_block);
+
 
     }
 

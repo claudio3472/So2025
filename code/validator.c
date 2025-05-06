@@ -5,9 +5,42 @@ void cleanall(){
     exit(0);
 }
 
+void deserialize_block(const unsigned char *buffer, size_t size) {
+    const unsigned char *p = buffer;
+
+    int block_id, num_transactions;
+    long int miner_id;
+    time_t timestamp;
+    unsigned int nonce;
+    char previous_hash[HASH_SIZE];
+    char hash[HASH_SIZE];
+
+    memcpy(&block_id, p, sizeof(int)); p += sizeof(int);
+    memcpy(&miner_id, p, sizeof(long int)); p += sizeof(long int);
+    memcpy(&num_transactions, p, sizeof(int)); p += sizeof(int);
+    memcpy(&timestamp, p, sizeof(time_t)); p += sizeof(time_t);
+    memcpy(&nonce, p, sizeof(unsigned int)); p += sizeof(unsigned int);
+    memcpy(previous_hash, p, HASH_SIZE); p += HASH_SIZE;
+    memcpy(hash, p, HASH_SIZE); p += HASH_SIZE;
+
+    
+    printf("========== Serialized Block Info ==========\n");
+    printf("Block ID     : %d\n", block_id);
+    printf("Miner ID     : %ld\n", miner_id);
+    printf("Transactions : %d\n", num_transactions);
+    printf("Timestamp    : %ld\n", timestamp);
+    printf("Nonce        : %u\n", nonce);
+    printf("Prev Hash    : %s\n", previous_hash);
+    printf("Hash    : %s\n", hash);
+
+    printf("===========================================\n");
+    
+
+}
+
 int validator(){
     int num;
-    //falta semopen e assim aqui
+    
     int fd = open("/tmp/VALIDATOR_INPUT", O_RDONLY);
     if (fd == -1) {
         perror("Erro ao abrir o pipe para leitura");
@@ -17,12 +50,11 @@ int validator(){
     printf("Validator: Pipe aberto, à espera de dados...\n");
 
     read(fd, &num, sizeof(num));
-    printf("..........%d\n", num);
+    //printf("..........%d\n", num);
 
     while (1) {
         char *endptr;
         
-
         char buffer[num];
         ssize_t total_read = 0;
         while (total_read < num) {
@@ -44,22 +76,44 @@ int validator(){
             total_read += r;
         }
 
-        printf("->%zu\n", total_read);
+        //printf("->%zu\n", total_read);
         if (total_read > 0) {
             // Lê e processa os dados recebidos
-            printf("Validator recebeu %zd bytes\n", total_read);
+            //printf("Validator recebeu %zd bytes\n", total_read);
 
-            // Aqui fazes a deserialização, validação, etc.
-            // Exemplo: printar o conteúdo como string (se aplicável)
-            buffer[total_read] = '\0'; // só se for texto
-            printf("Conteúdo: %s\n", buffer);
+            
+            int block_id, num_transactions;
+            long int miner_id;
+            fflush(stdout);
+          
+            memcpy(&block_id, buffer, sizeof(int));
+            memcpy(&miner_id, buffer + sizeof(long int), sizeof(long int));
+            memcpy(&num_transactions, buffer + 2 * sizeof(int), sizeof(int));
+            fflush(stdout);
+          
 
+            // Alocar a estrutura completa incluindo o array flexível
+            block *blk = malloc(sizeof(block) + sizeof(transaction) * num_transactions);
+            if (!blk) {
+                perror("malloc blk");
+                continue;
+            }
+            blk->num_transactions = num_transactions;
+
+            
+            deserialize_block((unsigned char *)buffer, num);
+            
+            
+            free(blk);
         } else if (total_read == 0) {
+       
             continue;
         } else {
             perror("Erro ao ler do pipe");
             break;
         }
+       
+        
     }
 
     close(fd);
