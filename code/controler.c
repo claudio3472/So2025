@@ -90,6 +90,13 @@ int main(int argc, char *argv[]) {
     init_trans_sem();
     init_block_sem();
 
+    print_sem = sem_open("/print_sync", O_CREAT, 0666, 1);
+    sem_write = sem_open("/write_sync", O_CREAT, 0644, 1); 
+    if (print_sem == SEM_FAILED) {
+        perror("sem_open");
+        exit(1);
+    }
+
     char fich[BUFFER];
     if(argc != 2){
         printf("comando: %s {config-file}\n", argv[0]);

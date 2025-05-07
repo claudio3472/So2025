@@ -19,12 +19,16 @@
 #include <sys/msg.h>
 #include <openssl/sha.h> 
 #include <openssl/evp.h>
+#include <arpa/inet.h>
 
 #define HASH_SIZE (SHA256_DIGEST_LENGTH * 2 + 1)
 extern sem_t *sem_transactions;
 extern sem_t *sem_blockchain;
 extern sem_t *sem_log;
-extern pthread_mutex_t prev_hash_mutex; 
+extern sem_t *sem_write; 
+extern sem_t *print_sem;
+extern pthread_mutex_t prev_hash_mutex;
+
 
 extern char prev_hash[HASH_SIZE];
 
@@ -39,6 +43,9 @@ typedef struct {
     int empty; 
 } transaction;
 
+
+
+
 typedef struct {      
     int count;
     int pool_size;
@@ -48,7 +55,7 @@ typedef struct {
 
 typedef struct {
     int block_id;
-    long int miner_id;
+    int miner_id;
     int num_transactions;
     time_t timestamp;
     unsigned int nonce;
@@ -59,6 +66,7 @@ typedef struct {
     transaction transactions[];
 
 } block;
+
 
 typedef struct {
     char hash[HASH_SIZE];
