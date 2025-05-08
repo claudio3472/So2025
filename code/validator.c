@@ -1,19 +1,20 @@
 #include "funcs.h"
+#define SHM_KEY 1234
+
+transactions_Pool *trans_pool_val = NULL;
 
 void cleanall(){
     logwrite("Validator thread closed. Exiting.\n");
     exit(0);
 }
 
-void deserialize_block(const unsigned char *buffer, size_t size) {
+void deserialize_block(const unsigned char *buffer, size_t size, block *blk) {
     const unsigned char *p = buffer;
 
     int block_id, num_transactions;
     int miner_id;
     time_t timestamp;
     unsigned int nonce;
-    char previous_hash[HASH_SIZE];
-    char hash[HASH_SIZE];
 
     // Check buffer size before reading fields
     if (size < sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + 2 * HASH_SIZE) {
@@ -27,14 +28,15 @@ void deserialize_block(const unsigned char *buffer, size_t size) {
     memcpy(&num_transactions, p, sizeof(int)); p += sizeof(int);
     memcpy(&timestamp, p, sizeof(time_t)); p += sizeof(time_t);
     memcpy(&nonce, p, sizeof(unsigned int)); p += sizeof(unsigned int);
-    memcpy(previous_hash, p, HASH_SIZE); p += HASH_SIZE;
-    memcpy(hash, p, HASH_SIZE); p += HASH_SIZE;
+    memcpy(blk->previous_hash, p, HASH_SIZE); p += HASH_SIZE;
+    memcpy(blk->hash, p, HASH_SIZE); p += HASH_SIZE;
 
     size_t expected_size = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + 2 * HASH_SIZE + num_transactions * sizeof(transaction);
     
-    printf("Expected size: %zu, Provided size: %zu\n", expected_size, size);
+    //printf("Expected size: %zu, Provided size: %zu\n", expected_size, size);
     
     // Print block information for debugging
+    /*
     sem_wait(print_sem);
     printf("========== Deserialized Block Info ==========\n");
     printf("Block ID     : %d\n", block_id);
@@ -45,6 +47,7 @@ void deserialize_block(const unsigned char *buffer, size_t size) {
     printf("Prev Hash    : %s\n", previous_hash);
     printf("Hash         : %s\n", hash);
     printf("===========================================\n");
+    */
     sem_post(print_sem);
 
     // Validate the number of transactions
@@ -73,9 +76,49 @@ void deserialize_block(const unsigned char *buffer, size_t size) {
         memcpy(&transactions[i], p, sizeof(transaction));
         p += sizeof(transaction);
     }
+
+
+    blk->block_id = block_id;
+    blk->miner_id = miner_id;
+    blk->num_transactions = num_transactions;
+    blk->timestamp = timestamp;
+    blk->nonce = nonce;
+
+    for (int i = 0; i < blk->num_transactions; ++i) {
+        blk->transactions[i] = transactions[i];
+    }
+
     free(transactions);
 }
 
+int check_poW(block *blk){
+    int poW_correto = 1;
+    int maior_recompensa = 0;
+    for (int i = 0; i < blk->num_transactions; ++i) {
+        if (blk->transactions[i].reward > maior_recompensa){
+            maior_recompensa = blk->transactions[i].reward;
+        }
+    }
+
+    char *hash = blk->hash;
+    int num_zeros_poW_correto = maior_recompensa;
+    //printf("rec - %d::::::Hash         : %s\n", num_zeros_poW_correto, hash);
+    for (int i = 0; i < num_zeros_poW_correto; ++i) {
+        if (hash[i] != '0') {
+            poW_correto = 0;
+            break;
+        }
+    }
+
+    // Verifica se o próximo caractere após os zeros também é '0'
+    if (hash[num_zeros_poW_correto] == '0') {
+        poW_correto = 0;
+    }
+
+    return poW_correto;
+
+
+}
 int validator(){
     int num;
     
@@ -86,6 +129,19 @@ int validator(){
     }
 
     printf("Validator: Pipe aberto, à espera de dados...\n");
+
+    int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
+    if (shmid == -1) {
+        perror("Error: Unable to access shared memory");
+        return 0;
+    }
+
+    trans_pool_val = (transactions_Pool *)shmat(shmid, NULL, 0);
+    if (trans_pool_val == (void *)-1) {
+        perror("Error: Unable to attach shared memory");
+        return 0;
+    }
+    //printf("Shared memory attached successfully.\n");
 
     for (int i = 0; i < 5; i++) {
         ssize_t r = read(fd, &num, sizeof(num));
@@ -149,7 +205,64 @@ int validator(){
             blk->num_transactions = num_transactions;
 
             
-            deserialize_block((unsigned char *)buffer, num);
+            deserialize_block((unsigned char *)buffer, num, blk);
+
+            int poW_correto = check_poW(blk);
+
+            int aux = 0;
+            
+            if(poW_correto){
+                printf("Bloco valido\n\n");
+
+                //verificar se nenhuma das transações do bloco são invalidas
+                
+                for (int j = 0; j < blk->num_transactions; ++j) {
+                    const char* id_transacao_atual = blk->transactions[j].tx_id;
+                    //ir procurar se ela existe na shared memory
+                    for (int i = 0; i < trans_pool_val->pool_size; i++) {
+                        if (strcmp(trans_pool_val->transactions[i].tx_id,id_transacao_atual) == 0 ) {
+                            aux += 1;
+                            break;
+                        }
+                    }
+                }
+
+                if(aux != blk->num_transactions){free(blk);continue;}
+
+
+                if (sem_wait(sem_transactions) == -1) {
+                    perror("sem_wait failed");
+                    return 0;
+                }
+
+                for (int j = 0; j < blk->num_transactions; ++j) {
+                    const char* id_transacao_atual = blk->transactions[j].tx_id;
+                    //ir procurar se ela existe na shared memory
+                    for (int i = 0; i < trans_pool_val->pool_size; i++) {
+                        if (strcmp(trans_pool_val->transactions[i].tx_id,id_transacao_atual) == 0 ) {
+                            trans_pool_val->transactions[i].empty = 1;
+                        }
+
+                        //para apenas incrementar a age uma vez em cada um
+                        if(j == 1){
+                            trans_pool_val->transactions[i].age += 1;
+                            if(trans_pool_val->transactions[i].age%50 == 0){
+                                trans_pool_val->transactions[i].reward +=1;
+                            }
+                        }
+                    }
+                }
+                sem_post(sem_transactions);
+
+
+                
+            }else{
+                printf("Bloco invalido\n\n");
+                free(blk);
+                continue;
+            }
+            
+        
             
             
             free(blk);
