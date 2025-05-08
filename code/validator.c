@@ -44,11 +44,11 @@ void deserialize_block(const unsigned char *buffer, size_t size, block *blk) {
     printf("Transactions : %d\n", num_transactions);
     printf("Timestamp    : %ld (%s)", timestamp, ctime(&timestamp));
     printf("Nonce        : %u\n", nonce);
-    printf("Prev Hash    : %s\n", previous_hash);
-    printf("Hash         : %s\n", hash);
+    printf("Prev Hash    : %s\n", blk->previous_hash);
+    printf("Hash         : %s\n", blk->hash);
     printf("===========================================\n");
-    */
-    sem_post(print_sem);
+    
+    sem_post(print_sem);*/
 
     // Validate the number of transactions
     if (num_transactions < 0) {
@@ -119,8 +119,7 @@ int check_poW(block *blk){
 
 
 }
-int validator(){
-    int num;
+int validator(int tam){
     
     int fd = open("/tmp/VALIDATOR_INPUT", O_RDONLY);
     if (fd == -1) {
@@ -142,7 +141,7 @@ int validator(){
         return 0;
     }
     //printf("Shared memory attached successfully.\n");
-
+    /*
     for (int i = 0; i < 5; i++) {
         ssize_t r = read(fd, &num, sizeof(num));
         if (r < 0) {
@@ -153,15 +152,15 @@ int validator(){
             break;
         }
     }
-    
+    */
     //printf("..........%d\n", num);
 
     while (1) {
         char *endptr;
-        char buffer[num];
+        char buffer[tam];
         ssize_t total_read = 0;
-        while (total_read < num) {
-            ssize_t r = read(fd, buffer + total_read, num - total_read);
+        while (total_read < tam) {
+            ssize_t r = read(fd, buffer + total_read, tam - total_read);
 
             long value = strtol(buffer, &endptr, 10);
             if (endptr != buffer) {
@@ -174,7 +173,7 @@ int validator(){
                 break;
             } else if (r == 0) {
                 // Writer closed the pipe
-                fprintf(stderr, "Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, num);
+                fprintf(stderr, "Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, tam);
                 break;
             }
             total_read += r;
@@ -205,7 +204,7 @@ int validator(){
             blk->num_transactions = num_transactions;
 
             
-            deserialize_block((unsigned char *)buffer, num, blk);
+            deserialize_block((unsigned char *)buffer, tam, blk);
 
             int poW_correto = check_poW(blk);
 
@@ -227,7 +226,7 @@ int validator(){
                     }
                 }
 
-                if(aux != blk->num_transactions){free(blk);continue;}
+                if(aux != blk->num_transactions){printf("Bloco com transação já processada");free(blk);continue;}
 
 
                 if (sem_wait(sem_transactions) == -1) {

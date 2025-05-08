@@ -176,6 +176,7 @@ int main(int argc, char *argv[]) {
         trans_Pool->transactions[i].age = 0;   
     }
 
+    int tam = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_Pool->max_trans_per_block;
 
     // Shared memory for Blockchain Ledger
     if ((shmid2 = shmget(key2, BLOCKCHAIN_BLOCKS * sizeof(blockchain_Ledger), IPC_CREAT | 0777)) == -1) {
@@ -202,7 +203,7 @@ int main(int argc, char *argv[]) {
         printf("Error: fork not executed correctly\n");
         return -1;
     } else if (pid2 == 0) {
-        validator(); 
+        validator(tam); 
         exit(0); 
     }
 
