@@ -315,9 +315,7 @@ int validator(int tam){
                 
                 block *dst_blk = &ledger_val->blocos[ledger_val->count];
                 *dst_blk = *blk;
-                for (int i = 0; i < blk->num_transactions; i++) {
-                    dst_blk->transactions[i] = blk->transactions[i];
-                }
+                memcpy(dst_blk, blk, sizeof(block) + sizeof(transaction) * blk->num_transactions);
 
 
                 //printf("ledgerrrr - %d\n", ledger_val->count);
@@ -336,9 +334,7 @@ int validator(int tam){
                 continue;
             }
             
-        
-            
-            
+    
             free(blk);
         } else if (total_read == 0) {
        
@@ -367,6 +363,7 @@ int validator(int tam){
     
     logwrite("Validator thread started\n");
     signal(SIGINT, cleanall);
+    signal(SIGTERM, cleanall);
     pause();
     return 0;
 }

@@ -85,14 +85,14 @@ void clean() {
     exit(0);
 }
 
-
+/*
 void *validator_aux(){
     printf("thread auxiliar para criar validatores criada");
     while(1){
         pthread_testcancel();
     }
     
-}
+}*/
 
 int main(int argc, char *argv[]) {
 
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    pthread_create(&thread_validatores_aux, NULL, validator_aux, NULL);
+    //pthread_create(&thread_validatores_aux, NULL, validator_aux, NULL);
 
     ledger->count = 0;
     ledger->tam = BLOCKCHAIN_BLOCKS;
