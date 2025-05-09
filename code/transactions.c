@@ -99,12 +99,14 @@ int main(int argc, char *argv[]) {
                 trans_pool->transactions[i].timestamp = time(NULL);
                 trans_pool->transactions[i].age = 0; 
                 trans_pool->transactions[i].empty = 0;
+                trans_pool-> count += 1;
     
-                printf("Transaction added at index %d -> ID: %s | Reward: %d | Value: %d\n",
+                printf("Transaction added at index %d -> ID: %s | Reward: %d | Value: %d | Count total %d\n",
                        i,
                        trans_pool->transactions[i].tx_id,
                        trans_pool->transactions[i].reward,
-                       trans_pool->transactions[i].value);
+                       trans_pool->transactions[i].value,
+                       trans_pool->count );
     
                 inserted = 1;
                 break;

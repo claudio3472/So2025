@@ -170,6 +170,9 @@ int main(int argc, char *argv[]) {
 
     trans_Pool->pool_size = TX_POOL_SIZE;
     trans_Pool->max_trans_per_block = TRANSACTIONS_BLOCK;
+    trans_Pool->count = 0;
+
+
 
     for (int i = 0; i < TX_POOL_SIZE; i++) {
         trans_Pool->transactions[i].empty = 1;
@@ -188,6 +191,9 @@ int main(int argc, char *argv[]) {
         perror("Error: in shmat - blockchain_Ledger");
         return 1;
     }
+
+    ledger->count = 0;
+    ledger->tam = BLOCKCHAIN_BLOCKS;
 
     pid1 = fork();
     if (pid1 < 0) {

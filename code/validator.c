@@ -1,9 +1,22 @@
 #include "funcs.h"
 #define SHM_KEY 1234
+#define SHM_KEY2 4321
 
 transactions_Pool *trans_pool_val = NULL;
+blockchain_Ledger *ledger_val = NULL;
+block *blk;
 
 void cleanall(){
+    if(!blk){
+        free(blk);
+    }
+    if (trans_pool_val) {
+    shmdt(trans_pool_val);
+    }
+    if (ledger_val) {
+        shmdt(ledger_val);
+    }
+    
     logwrite("Validator thread closed. Exiting.\n");
     exit(0);
 }
@@ -31,7 +44,7 @@ void deserialize_block(const unsigned char *buffer, size_t size, block *blk) {
     memcpy(blk->previous_hash, p, HASH_SIZE); p += HASH_SIZE;
     memcpy(blk->hash, p, HASH_SIZE); p += HASH_SIZE;
 
-    size_t expected_size = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + 2 * HASH_SIZE + num_transactions * sizeof(transaction);
+    //size_t expected_size = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + 2 * HASH_SIZE + num_transactions * sizeof(transaction);
     
     //printf("Expected size: %zu, Provided size: %zu\n", expected_size, size);
     
@@ -120,6 +133,7 @@ int check_poW(block *blk){
 
 }
 int validator(int tam){
+    //int auxxxx = 0;
     
     int fd = open("/tmp/VALIDATOR_INPUT", O_RDONLY);
     if (fd == -1) {
@@ -140,6 +154,20 @@ int validator(int tam){
         perror("Error: Unable to attach shared memory");
         return 0;
     }
+    /////////////////////////////////////////////////////////////////
+
+
+    int shmid2 = shmget(SHM_KEY2, sizeof(blockchain_Ledger), 0777);
+    if (shmid2 == -1) {
+        perror("Error: Unable to access shared memory");
+        return 0;
+    }
+    ledger_val = (blockchain_Ledger *)shmat(shmid2, NULL, 0);
+    if (ledger_val == (void *)-1) {
+        perror("Error: Unable to attach shared memory");
+        return 0;
+    }
+
     //printf("Shared memory attached successfully.\n");
     /*
     for (int i = 0; i < 5; i++) {
@@ -162,7 +190,7 @@ int validator(int tam){
         while (total_read < tam) {
             ssize_t r = read(fd, buffer + total_read, tam - total_read);
 
-            long value = strtol(buffer, &endptr, 10);
+            strtol(buffer, &endptr, 10);
             if (endptr != buffer) {
                 continue;
             }
@@ -196,7 +224,7 @@ int validator(int tam){
           
 
             // Alocar a estrutura completa incluindo o array flexível
-            block *blk = malloc(sizeof(block) + sizeof(transaction) * num_transactions);
+            blk = malloc(sizeof(block) + sizeof(transaction) * num_transactions);
             if (!blk) {
                 perror("malloc blk");
                 continue;
@@ -209,9 +237,26 @@ int validator(int tam){
             int poW_correto = check_poW(blk);
 
             int aux = 0;
+
+            int count = ledger_val->count;
             
+            if (count > 0) {
+                char *last_hash_ledger = ledger_val->blocos[count-1].hash;
+                if(strcmp(blk->previous_hash,last_hash_ledger) != 0 ){
+                    printf("Hash do bloco não confere com o hash do bloco anterior\n");
+                    free(blk);
+                    continue;
+                }
+            }else{
+                if(strcmp(blk->previous_hash,prev_hash) != 0){
+                    printf("Hash do bloco não confere com o hash do bloco anterior\n");
+                    free(blk);
+                    continue;
+                }
+            }
+            printf("aaaaaa\n");
             if(poW_correto){
-                printf("Bloco valido\n\n");
+                
 
                 //verificar se nenhuma das transações do bloco são invalidas
                 
@@ -219,18 +264,20 @@ int validator(int tam){
                     const char* id_transacao_atual = blk->transactions[j].tx_id;
                     //ir procurar se ela existe na shared memory
                     for (int i = 0; i < trans_pool_val->pool_size; i++) {
-                        if (strcmp(trans_pool_val->transactions[i].tx_id,id_transacao_atual) == 0 ) {
+                        if (strcmp(trans_pool_val->transactions[i].tx_id,id_transacao_atual) == 0 && trans_pool_val->transactions[i].empty == 0  ) {
                             aux += 1;
                             break;
                         }
                     }
                 }
-
-                if(aux != blk->num_transactions){printf("Bloco com transação já processada");free(blk);continue;}
+                
+                //auxxxx +=1;
+                if(aux != blk->num_transactions){printf("Bloco com transação já processada\n");free(blk);continue;}
 
 
                 if (sem_wait(sem_transactions) == -1) {
                     perror("sem_wait failed");
+                    free(blk);
                     return 0;
                 }
 
@@ -238,8 +285,9 @@ int validator(int tam){
                     const char* id_transacao_atual = blk->transactions[j].tx_id;
                     //ir procurar se ela existe na shared memory
                     for (int i = 0; i < trans_pool_val->pool_size; i++) {
-                        if (strcmp(trans_pool_val->transactions[i].tx_id,id_transacao_atual) == 0 ) {
+                        if (strcmp(trans_pool_val->transactions[i].tx_id,id_transacao_atual) == 0 && trans_pool_val->transactions[i].empty == 0 ) {
                             trans_pool_val->transactions[i].empty = 1;
+                            trans_pool_val->count -= 1;
                         }
 
                         //para apenas incrementar a age uma vez em cada um
@@ -252,6 +300,29 @@ int validator(int tam){
                     }
                 }
                 sem_post(sem_transactions);
+
+                if (sem_wait(sem_blockchain) == -1) {
+                    perror("sem_wait failed");
+                    free(blk);
+                    return 0;
+                }
+
+
+                
+                block *dst_blk = &ledger_val->blocos[ledger_val->count];
+                *dst_blk = *blk;
+                for (int i = 0; i < blk->num_transactions; i++) {
+                    dst_blk->transactions[i] = blk->transactions[i];
+                }
+
+
+                //printf("ledgerrrr - %d\n", ledger_val->count);
+                //printf("trans max do bloco 1 - %d\n", ledger_val->blocos[0].num_transactions);
+                ledger_val->count +=1;
+
+                sem_post(sem_blockchain);
+
+                printf("Bloco valido \n\n");
 
 
                 
@@ -270,6 +341,7 @@ int validator(int tam){
             continue;
         } else {
             perror("Erro ao ler do pipe");
+            
             break;
         }
        

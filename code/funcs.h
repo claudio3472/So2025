@@ -80,8 +80,8 @@ typedef struct
 {
 	//TBD
     int count; 
-    int actual_block_id;
-    int last_block_id;
+    int tam;
+    block blocos[];
     //possivelmente vai ser preciso criar uma struck to tipo blocos com as cenas que vão ser pedidas no enunciado
 } blockchain_Ledger;
 

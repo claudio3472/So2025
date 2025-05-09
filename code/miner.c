@@ -1,15 +1,20 @@
 #include "funcs.h"
 #define SHM_KEY 1234
+#define SHM_KEY2 4321
 #define POW_MAX_OPS 1000000
 #define SHA256_DIGEST_LENGTH 32  // Tamanho real do hash SHA-256 em bytes
 
 
 
+
+unsigned char *buffer2;
 pthread_t *threads;
 int num_threads;
 transactions_Pool *trans_pool = NULL;
+blockchain_Ledger *ledger_min = NULL;
 
 typedef unsigned char BYTE;
+BYTE *buffer;
 
 void calc_sha_256(BYTE hash_out[SHA256_DIGEST_LENGTH], const void *data, size_t len) {
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
@@ -31,7 +36,7 @@ void calc_sha_256(BYTE hash_out[SHA256_DIGEST_LENGTH], const void *data, size_t 
 
 void compute_block_hash(block *blk, int tx_count, BYTE hash_out[SHA256_DIGEST_LENGTH]) {
     size_t buffer_size = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE + sizeof(transaction) * tx_count;
-    BYTE *buffer = malloc(buffer_size);
+    buffer = malloc(buffer_size);
     if (!buffer) {
         perror("Failed to allocate memory");
         return;
@@ -121,10 +126,10 @@ void print_hash(BYTE hash[SHA256_DIGEST_LENGTH]) {
 unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
     *sz_buf = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE *2 + sizeof(transaction) * blk->num_transactions;
 
-    unsigned char *buffer = malloc(*sz_buf);
-    if (!buffer) return NULL;
+    buffer2 = malloc(*sz_buf);
+    if (!buffer2) return NULL;
 
-    unsigned char *p = buffer;
+    unsigned char *p = buffer2;
     
     memcpy(p, &blk->block_id, sizeof(int));
     p += sizeof(int);
@@ -146,10 +151,10 @@ unsigned char *serialize_block(const block *blk, size_t *sz_buf) {
         p += sizeof(transaction);
     }
 
-    return buffer;
+    return buffer2;
 }
 
-
+/*
 void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
     const unsigned char *p = buffer;
 
@@ -169,7 +174,7 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
     memcpy(previous_hash, p, HASH_SIZE); p += HASH_SIZE;
     memcpy(hash, p, HASH_SIZE); p += HASH_SIZE;
 
-    /*
+    
     // Print block info
     sem_wait(print_sem);
     printf("========== Serialized Block Info ==========\n");
@@ -182,7 +187,7 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
     printf("Hash         : %s\n", hash);
 
     // Deserialize and print transactions
-    printf("Transactions:\n");*/
+    printf("Transactions:\n");
 
     // Allocate memory for the transactions
     transaction *transactions = malloc(num_transactions * sizeof(transaction));
@@ -196,7 +201,7 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
     for (int i = 0; i < num_transactions; ++i) {
         memcpy(&transactions[i], p, sizeof(transaction));
         p += sizeof(transaction);
-/*
+
         // Print the transaction info
         printf("  Transaction %d\n", i + 1);
         printf("    TX ID      : %s\n", transactions[i].tx_id);
@@ -204,7 +209,7 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
         printf("    Value      : %d\n", transactions[i].value);
         printf("    Timestamp  : %ld (%s)\n", transactions[i].timestamp, ctime(&transactions[i].timestamp));
         printf("    Age        : %d\n", transactions[i].age);
-        printf("    Empty      : %d\n", transactions[i].empty);*/
+        printf("    Empty      : %d\n", transactions[i].empty);
     }
 
     // Free the allocated memory
@@ -213,6 +218,7 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
     //printf("===========================================\n");
     //sem_post(print_sem);
 }
+*/
 
 
 void *miner_thread() {
@@ -238,7 +244,7 @@ void *miner_thread() {
     }
     //printf("Shared memory attached successfully.\n");
 
-    int tama = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_pool->max_trans_per_block;
+    //int tama = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_pool->max_trans_per_block;
     
     //write(fd, &tama, sizeof(tama));
 
@@ -289,12 +295,34 @@ void *miner_thread() {
             exit(1);
         }
 
-        strcpy(new_block->previous_hash, prev_hash);  
+
+        int shmid2 = shmget(SHM_KEY2, sizeof(blockchain_Ledger), 0777);
+        if (shmid2 == -1) {
+            perror("Error: Unable to access shared memory");
+            return 0;
+        }
+        ledger_min = (blockchain_Ledger *)shmat(shmid2, NULL, 0);
+        if (ledger_min == (void *)-1) {
+            perror("Error: Unable to attach shared memory");
+            return 0;
+        }
+
+         
 
         new_block->block_id = rand() % 1000000;
         new_block->miner_id = miner_id; //thread_id;
         new_block->num_transactions = tx_count;
         memcpy(new_block->transactions, selected, sizeof(transaction) * tx_count);
+
+        int count = ledger_min->count;
+        char *prev_hash_ledger;
+
+        if (count > 0) {
+            prev_hash_ledger = ledger_min->blocos[count-1].hash;
+        }else{
+            prev_hash_ledger = prev_hash;
+        }
+        strcpy(new_block->previous_hash, prev_hash_ledger); 
 
         PoWResult r;
         do {
@@ -302,7 +330,7 @@ void *miner_thread() {
             r = proof_of_work(new_block, tx_count, max_trans_per_block);
         } while (r.error == 1);
 
-        strcpy(prev_hash, new_block->hash);
+
         /*
         printf("!!!!!!!!!!!!!!!!!Block Info!!!!!!!!!!!!!!!!!\n");
         printf("Block ID     : %d\n", new_block->block_id);
@@ -335,7 +363,7 @@ void *miner_thread() {
 
         //printf("Sending block of size: %zu\n", serialized_block_size);
         
-        debug_print_serialized_block(serialized_block, serialized_block_size);
+        //debug_print_serialized_block(serialized_block, serialized_block_size);
 
         ssize_t bytes_written = write(fd, serialized_block, serialized_block_size);
         if (bytes_written < 0) {
@@ -371,6 +399,16 @@ void cleanup() {
         pthread_join(threads[i], NULL);
     }
     free(threads);
+
+    if (trans_pool) {
+    shmdt(trans_pool);
+    }
+    if (ledger_min) {
+        shmdt(ledger_min);
+    }
+    free(buffer);
+    free(buffer2);
+
     logwrite("All miner threads closed. Exiting.\n");
     exit(0);
 }
