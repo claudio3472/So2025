@@ -406,8 +406,6 @@ void cleanup() {
     if (ledger_min) {
         shmdt(ledger_min);
     }
-    free(buffer);
-    free(buffer2);
 
     logwrite("All miner threads closed. Exiting.\n");
     exit(0);
