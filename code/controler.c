@@ -10,6 +10,7 @@ transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
 pid_t pid1, pid2, pid3;
 int TRANSACTIONS_PER_BLOCK;
+pthread_t thread_validatores_aux;
 
 
 int init_trans_sem() {
@@ -74,6 +75,9 @@ void clean() {
         perror("Failed to delete named pipe");
     }
 
+    pthread_cancel(thread_validatores_aux);
+    pthread_join(thread_validatores_aux, NULL);
+
     destroy_log_things();
     destroy_trans_sem();
     destroy_block_sem();
@@ -82,7 +86,13 @@ void clean() {
 }
 
 
-
+void *validator_aux(){
+    printf("thread auxiliar para criar validatores criada");
+    while(1){
+        pthread_testcancel();
+    }
+    
+}
 
 int main(int argc, char *argv[]) {
 
@@ -191,6 +201,8 @@ int main(int argc, char *argv[]) {
         perror("Error: in shmat - blockchain_Ledger");
         return 1;
     }
+
+    pthread_create(&thread_validatores_aux, NULL, validator_aux, NULL);
 
     ledger->count = 0;
     ledger->tam = BLOCKCHAIN_BLOCKS;

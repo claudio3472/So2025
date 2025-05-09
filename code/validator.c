@@ -6,6 +6,8 @@ transactions_Pool *trans_pool_val = NULL;
 blockchain_Ledger *ledger_val = NULL;
 block *blk;
 
+
+
 void cleanall(){
     if(!blk){
         free(blk);
@@ -20,6 +22,8 @@ void cleanall(){
     logwrite("Validator thread closed. Exiting.\n");
     exit(0);
 }
+
+
 
 void deserialize_block(const unsigned char *buffer, size_t size, block *blk) {
     const unsigned char *p = buffer;
