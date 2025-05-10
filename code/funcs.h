@@ -82,7 +82,7 @@ typedef struct
     int count; 
     int tam;
     block blocos[];
-    //possivelmente vai ser preciso criar uma struck to tipo blocos com as cenas que vão ser pedidas no enunciado
+    
 } blockchain_Ledger;
 
 int miner(int num);

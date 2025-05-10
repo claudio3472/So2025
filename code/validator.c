@@ -311,11 +311,13 @@ int validator(int tam){
                     return 0;
                 }
 
-
+                if(ledger_val->count == ledger_val->tam ){printf("Ledger is full\n");free(blk);continue;}
                 
                 block *dst_blk = &ledger_val->blocos[ledger_val->count];
                 *dst_blk = *blk;
-                memcpy(dst_blk, blk, sizeof(block) + sizeof(transaction) * blk->num_transactions);
+                for (int i = 0; i < blk->num_transactions; i++) {
+                    dst_blk->transactions[i] = blk->transactions[i];
+                }
 
 
                 //printf("ledgerrrr - %d\n", ledger_val->count);
@@ -334,7 +336,9 @@ int validator(int tam){
                 continue;
             }
             
-    
+        
+            
+            
             free(blk);
         } else if (total_read == 0) {
        
