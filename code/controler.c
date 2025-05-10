@@ -75,8 +75,8 @@ void clean() {
         perror("Failed to delete named pipe");
     }
 
-    pthread_cancel(thread_validatores_aux);
-    pthread_join(thread_validatores_aux, NULL);
+    //pthread_cancel(thread_validatores_aux);
+    //pthread_join(thread_validatores_aux, NULL);
 
     destroy_log_things();
     destroy_trans_sem();
