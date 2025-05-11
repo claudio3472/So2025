@@ -4,13 +4,13 @@
 #define key1 1234
 #define key2 4321
 
-
-int shmid, shmid2, mqid;
+int shmid, shmid2, mqid,tam;
 transactions_Pool *trans_Pool;
 blockchain_Ledger *ledger;
-pid_t pid1, pid2, pid3;
+pid_t pid1, pid2, pid3, pid4, pid5;
 int TRANSACTIONS_PER_BLOCK;
 pthread_t thread_validatores_aux;
+pid_t main_pid;
 
 
 int init_trans_sem() {
@@ -52,7 +52,16 @@ int destroy_block_sem() {
 }
 
 void clean() {
+    
+    if (getpid() != main_pid) return;
+
     printf("\nSIGINT detected. Cleaning up...\n");
+
+    pthread_cancel(thread_validatores_aux);
+
+    if (trans_Pool) {
+    shmdt(trans_Pool);
+    }
 
     waitpid(pid1, NULL, 0);
     waitpid(pid2, NULL, 0);
@@ -75,8 +84,7 @@ void clean() {
         perror("Failed to delete named pipe");
     }
 
-    //pthread_cancel(thread_validatores_aux);
-    //pthread_join(thread_validatores_aux, NULL);
+    
 
     destroy_log_things();
     destroy_trans_sem();
@@ -85,16 +93,94 @@ void clean() {
     exit(0);
 }
 
-/*
 void *validator_aux(){
-    printf("thread auxiliar para criar validatores criada");
+    printf("thread auxiliar para criar validatores criada\n");
+    int validator60 = 0;
+    int validator80 = 0;
+
+    int shmid = shmget(key1, sizeof(transactions_Pool), 0777);
+    if (shmid == -1) {
+        perror("Error: Unable to access shared memory");
+        return 0;
+    }
+
+    trans_Pool = (transactions_Pool *)shmat(shmid, NULL, 0);
+    if (trans_Pool == (void *)-1) {
+        perror("Error: Unable to attach shared memory");
+        return 0;
+    }
+
     while(1){
-        pthread_testcancel();
+    
+        if(trans_Pool != NULL){
+            
+            if (sem_wait(sem_transactions) == -1) {
+                    perror("sem_wait failed");
+                    return NULL;
+                }
+
+            if (trans_Pool->pool_size <= 0) {
+                fprintf(stderr, "trans_Pool->pool_size not initialized yet\n");
+                continue;
+            }
+            int size_actual = trans_Pool->count;
+            int total_size = trans_Pool->pool_size;
+            
+            sem_post(sem_transactions);
+
+            if (size_actual >= total_size * 0.6 && validator60 ==0) {
+                fflush(stdout);
+                validator60 = 1;
+                pid4 = fork();
+                if (pid4 < 0) {
+                    printf("Error: fork not executed correctly\n");
+                    return NULL;
+                } else if (pid4 == 0) {
+                    printf("NEW VALIDATOR CREATED - MEMORY PASS THE 60%% capacity\n");
+                    validator(tam); 
+                    exit(0); 
+                }
+
+            }
+
+            if (size_actual >= total_size * 0.8 && validator80 == 0) {
+                validator80 = 1;
+                pid5 = fork();
+                if (pid5 < 0) {
+                    printf("Error: fork not executed correctly\n");
+                    return NULL;
+                } else if (pid5 == 0) {
+                    printf("NEW VALIDATOR CREATED - MEMORY PASS THE 80%% capacity\n");
+                    validator(tam); 
+                    exit(0); 
+                }
+
+            }
+
+            if(size_actual < total_size * 0.4){
+                if(validator60){
+                    kill(pid4, SIGTERM);
+                    waitpid(pid4, NULL, 0);
+                    printf("[INFO] Validator60 process terminated — memory below 40%% capacity.\n");
+                    validator60 = 0;
+                }
+                if(validator80){
+                    kill(pid5, SIGTERM);
+                    waitpid(pid5, NULL, 0);
+                    printf("[INFO] Validator60 process terminated — memory below 40%% capacity.\n");
+                    validator80 = 0;
+                }
+            }
+        }
+        //pause();
+
     }
     
-}*/
+}
 
 int main(int argc, char *argv[]) {
+
+    main_pid = getpid();
 
     init_log_things();
     init_trans_sem();
@@ -189,7 +275,7 @@ int main(int argc, char *argv[]) {
         trans_Pool->transactions[i].age = 0;   
     }
 
-    int tam = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_Pool->max_trans_per_block;
+    tam = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_Pool->max_trans_per_block;
 
     // Shared memory for Blockchain Ledger
     if ((shmid2 = shmget(key2, BLOCKCHAIN_BLOCKS * sizeof(blockchain_Ledger), IPC_CREAT | 0777)) == -1) {
@@ -202,7 +288,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    //pthread_create(&thread_validatores_aux, NULL, validator_aux, NULL);
+    pthread_create(&thread_validatores_aux, NULL, validator_aux, NULL);
 
     ledger->count = 0;
     ledger->tam = BLOCKCHAIN_BLOCKS;
@@ -233,7 +319,12 @@ int main(int argc, char *argv[]) {
         statistics();
         exit(0); 
     }
+
+    
+
     signal(SIGINT, clean);
+    signal(SIGTERM, clean); 
+
 
     pause();
     return 0;

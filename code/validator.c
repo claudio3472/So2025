@@ -9,8 +9,9 @@ block *blk;
 
 
 void cleanall(){
-    if(!blk){
+    if(blk){
         free(blk);
+        blk = NULL;
     }
     if (trans_pool_val) {
     shmdt(trans_pool_val);
@@ -186,18 +187,24 @@ int validator(int tam){
     }
     */
     //printf("..........%d\n", num);
+    int sinal = 1;
+    while (1 && sinal) {
+        //char *endptr;
+        char *buffer = malloc(tam);
+        if (!buffer) {
+            perror("malloc buffer");
+            exit(EXIT_FAILURE);
+        }
 
-    while (1) {
-        char *endptr;
-        char buffer[tam];
         ssize_t total_read = 0;
         while (total_read < tam) {
             ssize_t r = read(fd, buffer + total_read, tam - total_read);
 
+            /*
             strtol(buffer, &endptr, 10);
             if (endptr != buffer) {
                 continue;
-            }
+            }*/
 
 
             if (r < 0) {
@@ -206,12 +213,16 @@ int validator(int tam){
             } else if (r == 0) {
                 // Writer closed the pipe
                 fprintf(stderr, "Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, tam);
+                sinal = 0;
                 break;
             }
             total_read += r;
         }
 
         //printf("->%zu\n", total_read);
+        if (errno == EINTR) {
+        continue;  // Foi interrompido por um sinal, tenta novamente
+    }
         if (total_read > 0) {
             // Lê e processa os dados recebidos
             //printf("Validator recebeu %zd bytes\n", total_read);
@@ -237,6 +248,7 @@ int validator(int tam){
 
             
             deserialize_block((unsigned char *)buffer, tam, blk);
+            free(buffer);
 
             int poW_correto = check_poW(blk);
 
@@ -249,16 +261,19 @@ int validator(int tam){
                 if(strcmp(blk->previous_hash,last_hash_ledger) != 0 ){
                     printf("Hash do bloco não confere com o hash do bloco anterior\n");
                     free(blk);
+                    blk = NULL;
                     continue;
                 }
             }else{
                 if(strcmp(blk->previous_hash,prev_hash) != 0){
                     printf("Hash do bloco não confere com o hash do bloco anterior\n");
                     free(blk);
+                    blk = NULL;
                     continue;
                 }
             }
-            printf("aaaaaa\n");
+            
+
             if(poW_correto){
                 
 
@@ -276,12 +291,13 @@ int validator(int tam){
                 }
                 
                 //auxxxx +=1;
-                if(aux != blk->num_transactions){printf("Bloco com transação já processada\n");free(blk);continue;}
+                if(aux != blk->num_transactions){printf("Bloco com transação já processada\n");free(blk);blk = NULL;continue;}
 
 
                 if (sem_wait(sem_transactions) == -1) {
                     perror("sem_wait failed");
                     free(blk);
+                    blk = NULL;
                     return 0;
                 }
 
@@ -308,6 +324,7 @@ int validator(int tam){
                 if (sem_wait(sem_blockchain) == -1) {
                     perror("sem_wait failed");
                     free(blk);
+                    blk = NULL;
                     return 0;
                 }
 
@@ -322,6 +339,15 @@ int validator(int tam){
                 //printf("trans max do bloco 1 - %d\n", ledger_val->blocos[0].num_transactions);
                 ledger_val->count +=1;
 
+                int miner_id = blk->miner_id;
+                int time_total=0;
+                int time_taken;
+                for (int i = 0; i < blk->num_transactions; ++i) {
+                    time_taken = time(NULL) - blk->transactions[i].timestamp;
+                    time_total += time_taken;
+                }
+                int tempo_medio = time_total/blk->num_transactions;
+
                 sem_post(sem_blockchain);
 
                 printf("Bloco valido \n\n");
@@ -331,11 +357,13 @@ int validator(int tam){
             }else{
                 printf("Bloco invalido\n\n");
                 free(blk);
+                blk = NULL;
                 continue;
             }
             
     
             free(blk);
+            blk = NULL;
         } else if (total_read == 0) {
        
             continue;

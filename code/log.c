@@ -39,9 +39,11 @@ int logwrite(char* line) {
         }
     }
 
-    if (sem_wait(sem_log) == -1) {
-        perror("sem_wait failed");
-        return -1;
+    if(sem_log != NULL){
+        if (sem_wait(sem_log) == -1) {
+            perror("sem_wait failed");
+            return -1;
+        }
     }
 
     time_t currentTime;
@@ -60,7 +62,9 @@ int logwrite(char* line) {
 
 
     
-    sem_post(sem_log);
-
+    if(sem_log != NULL){
+        sem_post(sem_log);
+    }
+    
     return 0;
 }

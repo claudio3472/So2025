@@ -1,6 +1,7 @@
 CC = gcc
 FLAGS = -Wall -Wextra -g -pthread
-LIBS = -lssl -lcrypto 
+LIBS = -lssl -lcrypto
+
 
 TRANSACTIONS_SRC = transactions.c globals.c
 CONTROLER_SRC = controler.c log.c miner.c validator.c statistics.c globals.c
