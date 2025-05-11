@@ -117,7 +117,7 @@ void *validator_aux(){
             if (sem_wait(sem_transactions) == -1) {
                     perror("sem_wait failed");
                     return NULL;
-                }
+                } 
 
             if (trans_Pool->pool_size <= 0) {
                 fprintf(stderr, "trans_Pool->pool_size not initialized yet\n");
@@ -233,8 +233,9 @@ int main(int argc, char *argv[]) {
     printf("TX_POOL_SIZE = %d\n", TX_POOL_SIZE);
     printf("TRANSACTIONS_BLOCK = %d\n", TRANSACTIONS_BLOCK);
     printf("BLOCKCHAIN_BLOCKS = %d\n", BLOCKCHAIN_BLOCKS);
-
-    mqid = msgget(IPC_PRIVATE, IPC_CREAT | 0777);
+    
+    key_t key = ftok("teste", 65);
+    mqid = msgget(key, IPC_CREAT | 0777);
 
     if (mqid == -1) {
         printf("msgget didnt process correctly");

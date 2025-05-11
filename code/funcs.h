@@ -32,8 +32,6 @@ extern pthread_mutex_t prev_hash_mutex;
 
 extern char prev_hash[HASH_SIZE];
 
-
-
 typedef struct {
     char tx_id[32];       
     int reward;          
@@ -42,6 +40,22 @@ typedef struct {
     int age;             
     int empty; 
 } transaction;
+
+typedef struct {
+    int miner_id;
+    int blocos_validos;
+    int blocos_invalidos;
+    int total_recompensa;
+} MinerStats;
+
+
+typedef struct {
+    long mtype;        
+    int miner_id;      
+    int is_valid;      
+    int total_reward;     
+    time_t tempo_medio;
+} msg;
 
 
 
@@ -82,7 +96,7 @@ typedef struct
     int count; 
     int tam;
     block blocos[];
-    //possivelmente vai ser preciso criar uma struck to tipo blocos com as cenas que vão ser pedidas no enunciado
+    
 } blockchain_Ledger;
 
 int miner(int num);

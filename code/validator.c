@@ -5,10 +5,41 @@
 transactions_Pool *trans_pool_val = NULL;
 blockchain_Ledger *ledger_val = NULL;
 block *blk;
+int msgid;
+int sinal = 1;
+
+
+void print_blockchain() {
+    if (!ledger_val) {
+        printf("Ledger is NULL.\n");
+        return;
+    }
+
+    printf("=================== Blockchain Ledger ===================\n");
+
+    for (int i = 0; i < ledger_val->count; i++) {
+        block *blk = &ledger_val->blocos[i];
+        printf("||---- Block %03d --\n", i);
+        printf("Block ID: BLOCK-%d-%d\n", blk->block_id, i);
+        printf("Previous Hash:\n%s\n", blk->previous_hash);
+        printf("Block Timestamp: %ld\n ", blk->timestamp);
+        printf("Nonce: %u\n", blk->nonce);
+        printf("Transactions:\n");
+
+        for (int j = 0; j < blk->num_transactions; j++) {
+            transaction *tx = &blk->transactions[j];
+            printf(" [%d] ID: %s | Reward: %d | Value: %.2f | Timestamp: %ld \n", 
+                j, tx->tx_id, tx->reward, (float)tx->value, tx->timestamp);
+        }
+
+        printf("----------------------------------------------------------\n");
+    }
+}
 
 
 
 void cleanall(){
+    print_blockchain();
     if(blk){
         free(blk);
         blk = NULL;
@@ -137,6 +168,25 @@ int check_poW(block *blk){
 
 
 }
+
+
+void envia_invalido(int miner_id){
+    msg mensagem;
+    memset(&mensagem, 0, sizeof(mensagem));  // limpa tudo primeiro
+    mensagem.tempo_medio = 0;
+    mensagem.miner_id = miner_id;
+    mensagem.is_valid = 0;
+    mensagem.total_reward = 0;
+    mensagem.mtype = 1;
+               
+    if (msgsnd(msgid, &mensagem, sizeof(msg) - sizeof(long), 0) == -1) {
+        perror("msgsnd");
+        exit(1);
+    }
+    printf("Mensagem enviada com sucesso!\n");
+}
+
+
 int validator(int tam){
     //int auxxxx = 0;
     
@@ -147,6 +197,13 @@ int validator(int tam){
     }
 
     printf("Validator: Pipe aberto, à espera de dados...\n");
+    key_t key = ftok("teste", 65);
+    msgid = msgget(key, 0666);
+
+    if (msgid == -1) {
+        perror("msgget");
+        exit(1);
+    }
 
     int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
     if (shmid == -1) {
@@ -187,7 +244,10 @@ int validator(int tam){
     }
     */
     //printf("..........%d\n", num);
-    int sinal = 1;
+    
+
+    
+
     while (1 && sinal) {
         //char *endptr;
         char *buffer = malloc(tam);
@@ -197,6 +257,8 @@ int validator(int tam){
         }
 
         ssize_t total_read = 0;
+
+        
         while (total_read < tam) {
             ssize_t r = read(fd, buffer + total_read, tam - total_read);
 
@@ -206,23 +268,23 @@ int validator(int tam){
                 continue;
             }*/
 
-
+            if (errno == EINTR) {
+            continue;  // Foi interrompido por um sinal, tenta novamente
+            }
             if (r < 0) {
                 perror("Erro ao ler do pipe");
                 break;
             } else if (r == 0) {
                 // Writer closed the pipe
-                fprintf(stderr, "Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, tam);
                 sinal = 0;
+                printf("Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, tam);
                 break;
             }
             total_read += r;
         }
 
         //printf("->%zu\n", total_read);
-        if (errno == EINTR) {
-        continue;  // Foi interrompido por um sinal, tenta novamente
-    }
+        
         if (total_read > 0) {
             // Lê e processa os dados recebidos
             //printf("Validator recebeu %zd bytes\n", total_read);
@@ -259,14 +321,17 @@ int validator(int tam){
             if (count > 0) {
                 char *last_hash_ledger = ledger_val->blocos[count-1].hash;
                 if(strcmp(blk->previous_hash,last_hash_ledger) != 0 ){
-                    printf("Hash do bloco não confere com o hash do bloco anterior\n");
+                    //printf("Hash do bloco não confere com o hash do bloco anterior\n");
+                    envia_invalido(blk->miner_id);
                     free(blk);
                     blk = NULL;
+                    
                     continue;
                 }
             }else{
                 if(strcmp(blk->previous_hash,prev_hash) != 0){
-                    printf("Hash do bloco não confere com o hash do bloco anterior\n");
+                    //printf("Hash do bloco não confere com o hash do bloco anterior\n");
+                    envia_invalido(blk->miner_id);
                     free(blk);
                     blk = NULL;
                     continue;
@@ -291,7 +356,7 @@ int validator(int tam){
                 }
                 
                 //auxxxx +=1;
-                if(aux != blk->num_transactions){printf("Bloco com transação já processada\n");free(blk);blk = NULL;continue;}
+                if(aux != blk->num_transactions){printf("Bloco com transação já processada\n");envia_invalido(blk->miner_id);free(blk);blk = NULL;continue;}
 
 
                 if (sem_wait(sem_transactions) == -1) {
@@ -328,11 +393,13 @@ int validator(int tam){
                     return 0;
                 }
 
-
+                if(ledger_val->count == ledger_val->tam ){printf("Ledger is full\n");envia_invalido(blk->miner_id);free(blk);continue;}
                 
                 block *dst_blk = &ledger_val->blocos[ledger_val->count];
                 *dst_blk = *blk;
-                memcpy(dst_blk, blk, sizeof(block) + sizeof(transaction) * blk->num_transactions);
+                for (int i = 0; i < blk->num_transactions; i++) {
+                    dst_blk->transactions[i] = blk->transactions[i];
+                }
 
 
                 //printf("ledgerrrr - %d\n", ledger_val->count);
@@ -340,13 +407,31 @@ int validator(int tam){
                 ledger_val->count +=1;
 
                 int miner_id = blk->miner_id;
-                int time_total=0;
-                int time_taken;
+                time_t time_total=0;
+                time_t time_taken;
+                int total_rewr = 0;
                 for (int i = 0; i < blk->num_transactions; ++i) {
                     time_taken = time(NULL) - blk->transactions[i].timestamp;
                     time_total += time_taken;
+                    total_rewr += blk->transactions[i].reward;
                 }
-                int tempo_medio = time_total/blk->num_transactions;
+                time_t tempo_medio = time_total/blk->num_transactions;
+
+                msg mensagem;
+                memset(&mensagem, 0, sizeof(mensagem));  // limpa tudo primeiro
+                mensagem.tempo_medio = tempo_medio;
+                mensagem.miner_id = miner_id;
+                mensagem.is_valid = 1;
+                mensagem.total_reward = total_rewr;
+                mensagem.mtype = 1;
+               
+                if (msgsnd(msgid, &mensagem, sizeof(msg) - sizeof(long), 0) == -1) {
+                    perror("msgsnd");
+                    exit(1);
+                }
+
+                printf("Mensagem enviada com sucesso!\n");
+
 
                 sem_post(sem_blockchain);
 
@@ -356,12 +441,15 @@ int validator(int tam){
                 
             }else{
                 printf("Bloco invalido\n\n");
+                envia_invalido(blk->miner_id);
                 free(blk);
                 blk = NULL;
                 continue;
             }
             
-    
+        
+            
+            
             free(blk);
             blk = NULL;
         } else if (total_read == 0) {
@@ -375,6 +463,7 @@ int validator(int tam){
        
         
     }
+    
 
     close(fd);
 

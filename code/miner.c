@@ -10,6 +10,7 @@
 unsigned char *buffer2;
 pthread_t *threads;
 int num_threads;
+int o;
 transactions_Pool *trans_pool = NULL;
 blockchain_Ledger *ledger_min = NULL;
 
@@ -222,8 +223,11 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
 
 
 void *miner_thread() {
-    pthread_t num = pthread_self();
-    int miner_id = (int)num;
+
+    int miner_id = o;
+
+    //printf("aaaaaa- %d\n", miner_id);
+
     int fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
      
     if (fd == -1) {
@@ -423,6 +427,7 @@ int miner(int num) {
     signal(SIGINT, cleanup);
 
     for (int i = 0; i < num; i++) {
+        o = i;
         pthread_create(&threads[i], NULL, miner_thread, NULL);
         char log_msg[50];
         snprintf(log_msg, sizeof(log_msg), "Miner thread %d started\n", i + 1);
