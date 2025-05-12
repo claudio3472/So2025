@@ -60,13 +60,25 @@ void clean() {
     pthread_cancel(thread_validatores_aux);
 
     if (trans_Pool) {
-    shmdt(trans_Pool);
+        shmdt(trans_Pool);
     }
 
     waitpid(pid1, NULL, 0);
     waitpid(pid2, NULL, 0);
     waitpid(pid3, NULL, 0);
-    
+     // Kill pid4 if running
+    if (pid4 > 0) {
+        kill(pid4, SIGTERM);
+        waitpid(pid4, NULL, 0);
+        printf("[INFO] Validator60 (pid4) terminated during cleanup.\n");
+    }
+
+    // Kill pid5 if running
+    if (pid5 > 0) {
+        kill(pid5, SIGTERM);
+        waitpid(pid5, NULL, 0);
+        printf("[INFO] Validator80 (pid5) terminated during cleanup.\n");
+    }
     shmctl(shmid, IPC_RMID, NULL); // Remove shared memory 1
     logwrite("Shared Memory 1 deleted\n");
     trans_Pool = NULL; // Set pointer to NULL after deletion
@@ -92,6 +104,8 @@ void clean() {
 
     exit(0);
 }
+
+
 
 void *validator_aux(){
     printf("thread auxiliar para criar validatores criada\n");
@@ -138,7 +152,7 @@ void *validator_aux(){
                 } else if (pid4 == 0) {
                     printf("NEW VALIDATOR CREATED - MEMORY PASS THE 60%% capacity\n");
                     validator(tam); 
-                    exit(0); 
+                    continue;
                 }
 
             }
@@ -152,7 +166,7 @@ void *validator_aux(){
                 } else if (pid5 == 0) {
                     printf("NEW VALIDATOR CREATED - MEMORY PASS THE 80%% capacity\n");
                     validator(tam); 
-                    exit(0); 
+                    continue;
                 }
 
             }
@@ -164,6 +178,7 @@ void *validator_aux(){
                     printf("[INFO] Validator60 process terminated — memory below 40%% capacity.\n");
                     validator60 = 0;
                 }
+                
                 if(validator80){
                     kill(pid5, SIGTERM);
                     waitpid(pid5, NULL, 0);
@@ -177,6 +192,10 @@ void *validator_aux(){
     }
     
 }
+
+
+
+
 
 int main(int argc, char *argv[]) {
 
@@ -278,8 +297,10 @@ int main(int argc, char *argv[]) {
 
     tam = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_Pool->max_trans_per_block;
 
-    // Shared memory for Blockchain Ledger
-    if ((shmid2 = shmget(key2, BLOCKCHAIN_BLOCKS * sizeof(blockchain_Ledger), IPC_CREAT | 0777)) == -1) {
+    int total_size = sizeof(blockchain_Ledger) 
+               + BLOCKCHAIN_BLOCKS * (sizeof(block) + TRANSACTIONS_BLOCK * sizeof(transaction));
+
+    if ((shmid2 = shmget(key2, total_size, IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - blockchain_Ledger");
         return 1;
     }
@@ -290,6 +311,7 @@ int main(int argc, char *argv[]) {
     }
 
     pthread_create(&thread_validatores_aux, NULL, validator_aux, NULL);
+    
 
     ledger->count = 0;
     ledger->tam = BLOCKCHAIN_BLOCKS;

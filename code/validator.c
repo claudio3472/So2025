@@ -7,14 +7,33 @@ blockchain_Ledger *ledger_val = NULL;
 block *blk;
 int msgid;
 int sinal = 1;
+pthread_t input_thread;
 
-
+void print_ledger_info() {
+    if (!ledger_val) {
+        printf("Ledger is NULL.\n");
+        return;
+    }
+    printf("Ledger count: %d\n", ledger_val->count);
+    for (int i = 0; i < ledger_val->count; i++) {
+        block *blk = &ledger_val->blocos[i];
+        printf("Block %d\n Block ID: %d\n Previous Hash: %s\n Block Hash: %s\n",
+               i, blk->block_id, blk->previous_hash, blk->hash);
+        for (int j = 0; j < blk->num_transactions; j++) {
+            transaction *tx = &blk->transactions[j];
+            printf(" [%d] ID: %s | Reward: %d | Value: %.2f | Timestamp: %ld \n", 
+                j, tx->tx_id, tx->reward, (float)tx->value, tx->timestamp);
+        }
+    }
+    
+}
+/*
 void print_blockchain() {
     if (!ledger_val) {
         printf("Ledger is NULL.\n");
         return;
     }
-
+    sem_wait(print_sem);
     printf("=================== Blockchain Ledger ===================\n");
 
     for (int i = 0; i < ledger_val->count; i++) {
@@ -34,12 +53,13 @@ void print_blockchain() {
 
         printf("----------------------------------------------------------\n");
     }
-}
+    sem_post(print_sem);
+}*/
 
 
 
 void cleanall(){
-    print_blockchain();
+    //print_blockchain();
     if(blk){
         free(blk);
         blk = NULL;
@@ -51,9 +71,31 @@ void cleanall(){
         shmdt(ledger_val);
     }
     
-    logwrite("Validator thread closed. Exiting.\n");
+    pthread_cancel(input_thread);
+    
+    logwrite("Validator process closed. Exiting.\n");
     exit(0);
 }
+
+
+void cleanextra(){
+    if(blk){
+        free(blk);
+        blk = NULL;
+    }
+    if (trans_pool_val) {
+    shmdt(trans_pool_val);
+    }
+    
+    pthread_cancel(input_thread);
+    if (ledger_val) {
+        shmdt(ledger_val);
+    }
+    
+    logwrite("Extra validator process closed\n");
+    exit(0);
+}
+
 
 
 
@@ -183,13 +225,41 @@ void envia_invalido(int miner_id){
         perror("msgsnd");
         exit(1);
     }
-    printf("Mensagem enviada com sucesso!\n");
+    //printf("Mensagem enviada com sucesso!\n");
 }
 
+void handle_ctrl_l() {
+    printf("\n[Ctrl+L detected] Calling your custom function...\n");
+    // Call your desired function here
+    // custom_function();
+}
+
+void* listen_for_ctrl_l() {
+    struct termios oldt, newt;
+    char ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    while (1) {
+        read(STDIN_FILENO, &ch, 1);
+        if (ch == 12) { 
+            handle_ctrl_l();
+        }
+    }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return NULL;
+}
 
 int validator(int tam){
+    logwrite("Validator thread started\n");
+    signal(SIGINT, cleanall);
+    signal(SIGTERM, cleanextra);
     //int auxxxx = 0;
-    
+    pthread_create(&input_thread, NULL, listen_for_ctrl_l, NULL);
     int fd = open("/tmp/VALIDATOR_INPUT", O_RDONLY);
     if (fd == -1) {
         perror("Erro ao abrir o pipe para leitura");
@@ -197,6 +267,12 @@ int validator(int tam){
     }
 
     printf("Validator: Pipe aberto, à espera de dados...\n");
+    print_sem = sem_open("/print_sync", 0);
+    if (print_sem == SEM_FAILED) {
+        perror("sem_open");
+        exit(1);
+    }
+
     key_t key = ftok("teste", 65);
     msgid = msgget(key, 0666);
 
@@ -247,7 +323,11 @@ int validator(int tam){
     
 
     
-
+    sem_blockchain = sem_open("/sem_blockchain", 1);
+    if (sem_blockchain == SEM_FAILED) {
+        perror("sem_open for shared memory");
+        exit(1);
+    }
     while (1 && sinal) {
         //char *endptr;
         char *buffer = malloc(tam);
@@ -257,6 +337,11 @@ int validator(int tam){
         }
 
         ssize_t total_read = 0;
+          if (flock(fd, LOCK_EX) == -1) {
+            perror("Erro ao obter lock do pipe");
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
 
         
         while (total_read < tam) {
@@ -277,10 +362,17 @@ int validator(int tam){
             } else if (r == 0) {
                 // Writer closed the pipe
                 sinal = 0;
-                printf("Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, tam);
+                //printf("Pipe fechado antes de ler tudo (%zd de %d bytes)\n", total_read, tam);
                 break;
             }
             total_read += r;
+        }
+
+        if (flock(fd, LOCK_UN) == -1) {
+            perror("Erro ao liberar lock do pipe");
+            free(buffer);
+            close(fd);
+            exit(EXIT_FAILURE);
         }
 
         //printf("->%zu\n", total_read);
@@ -356,7 +448,13 @@ int validator(int tam){
                 }
                 
                 //auxxxx +=1;
-                if(aux != blk->num_transactions){printf("Bloco com transação já processada\n");envia_invalido(blk->miner_id);free(blk);blk = NULL;continue;}
+                if(aux != blk->num_transactions){
+                    //printf("Bloco com transação já processada\n");
+                    envia_invalido(blk->miner_id);
+                    free(blk);
+                    blk = NULL;
+                    continue;
+                }
 
 
                 if (sem_wait(sem_transactions) == -1) {
@@ -393,18 +491,28 @@ int validator(int tam){
                     return 0;
                 }
 
-                if(ledger_val->count == ledger_val->tam ){printf("Ledger is full\n");envia_invalido(blk->miner_id);free(blk);continue;}
-                
+                if(ledger_val->count == ledger_val->tam ){
+                    //printf("Ledger is full\n");
+                    envia_invalido(blk->miner_id);
+                    free(blk);
+                    continue;
+                }
+
+
                 block *dst_blk = &ledger_val->blocos[ledger_val->count];
                 *dst_blk = *blk;
                 for (int i = 0; i < blk->num_transactions; i++) {
                     dst_blk->transactions[i] = blk->transactions[i];
                 }
+                ledger_val->count++;
 
+                print_ledger_info();
+                // Increment the block count in the ledger
+            
 
                 //printf("ledgerrrr - %d\n", ledger_val->count);
                 //printf("trans max do bloco 1 - %d\n", ledger_val->blocos[0].num_transactions);
-                ledger_val->count +=1;
+
 
                 int miner_id = blk->miner_id;
                 time_t time_total=0;
@@ -429,18 +537,19 @@ int validator(int tam){
                     perror("msgsnd");
                     exit(1);
                 }
+                
 
-                printf("Mensagem enviada com sucesso!\n");
+                //printf("Mensagem enviada com sucesso!\n");
 
 
                 sem_post(sem_blockchain);
 
-                printf("Bloco valido \n\n");
+                //printf("Bloco valido \n\n");
 
 
                 
             }else{
-                printf("Bloco invalido\n\n");
+                //printf("Bloco invalido\n\n");
                 envia_invalido(blk->miner_id);
                 free(blk);
                 blk = NULL;
@@ -448,8 +557,6 @@ int validator(int tam){
             }
             
         
-            
-            
             free(blk);
             blk = NULL;
         } else if (total_read == 0) {
@@ -478,9 +585,7 @@ int validator(int tam){
 
     //criar um processo filho causo passse um certo threshold
     
-    logwrite("Validator thread started\n");
-    signal(SIGINT, cleanall);
-    signal(SIGTERM, cleanall);
+    
     pause();
     return 0;
 }

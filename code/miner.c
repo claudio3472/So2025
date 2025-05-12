@@ -9,13 +9,14 @@
 
 unsigned char *buffer2;
 pthread_t *threads;
-int num_threads;
-int o;
+int num_threads,fd;
 transactions_Pool *trans_pool = NULL;
 blockchain_Ledger *ledger_min = NULL;
 
 typedef unsigned char BYTE;
 BYTE *buffer;
+
+
 
 void calc_sha_256(BYTE hash_out[SHA256_DIGEST_LENGTH], const void *data, size_t len) {
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
@@ -222,18 +223,15 @@ void debug_print_serialized_block(const unsigned char *buffer, size_t size) {
 */
 
 
-void *miner_thread() {
+void *miner_thread(void* arg) {
 
-    int miner_id = o;
+    int miner_id = *((int *)arg);
+    free(arg);
+
 
     //printf("aaaaaa- %d\n", miner_id);
 
-    int fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
-     
-    if (fd == -1) {
-        perror("open");
-        exit(1);
-    }
+    
 
     int shmid = shmget(SHM_KEY, sizeof(transactions_Pool), 0777);
     if (shmid == -1) {
@@ -416,6 +414,12 @@ void cleanup() {
 }
 
 int miner(int num) {
+    fd = open("/tmp/VALIDATOR_INPUT", O_WRONLY);
+     
+    if (fd == -1) {
+        perror("open");
+        exit(1);
+    }
     print_sem = sem_open("/print_sync", 0);
     num_threads = num;
     threads = malloc(num * sizeof(pthread_t));
@@ -427,8 +431,14 @@ int miner(int num) {
     signal(SIGINT, cleanup);
 
     for (int i = 0; i < num; i++) {
-        o = i;
-        pthread_create(&threads[i], NULL, miner_thread, NULL);
+        
+        int *thread_id = malloc(sizeof(int));
+        if (thread_id == NULL) {
+            perror("malloc");
+            exit(1);
+        }
+        *thread_id = i+1;
+        pthread_create(&threads[i], NULL, miner_thread, thread_id);
         char log_msg[50];
         snprintf(log_msg, sizeof(log_msg), "Miner thread %d started\n", i + 1);
         logwrite(log_msg);

@@ -20,6 +20,8 @@
 #include <openssl/sha.h> 
 #include <openssl/evp.h>
 #include <arpa/inet.h>
+#include <sys/file.h>
+#include <termios.h>
 
 #define HASH_SIZE (SHA256_DIGEST_LENGTH * 2 + 1)
 extern sem_t *sem_transactions;
@@ -92,7 +94,7 @@ typedef struct {
 
 typedef struct
 {
-	//TBD
+	
     int count; 
     int tam;
     block blocos[];

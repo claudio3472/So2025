@@ -8,10 +8,17 @@ time_t tempo_total = 0;
 int total_blocos_validos = 0;
 int total_blocos_invalidos = 0;
 
+
+int compare_miner_id(const void *a, const void *b) {
+    const MinerStats *m1 = (const MinerStats *)a;
+    const MinerStats *m2 = (const MinerStats *)b;
+    return m1->miner_id - m2->miner_id;
+}
+
 void cleanb(){
     logwrite("Statistics thread closed. Exiting.\n");
 
-
+    sem_wait(print_sem);
     printf("\n===== Estatísticas Gerais =====\n");
     printf("Total number of blocks validated (both correct and incorrect): %d\n", count);
     printf("Total number of blocks in the Blockchain (válidos): %d\n", total_blocos_validos);
@@ -22,6 +29,7 @@ void cleanb(){
     } else {
         printf("Average time to verify a transaction: N/A (nenhum bloco processado)\n");
     }
+     qsort(lista, total_miners, sizeof(lista[0]), compare_miner_id);
 
     printf("\n===== Estatísticas por Minerador =====\n");
     for (int i = 0; i < total_miners; i++) {
@@ -31,6 +39,7 @@ void cleanb(){
         printf("  Total credits (recompensa): %d\n", lista[i].total_recompensa);
         printf("\n");
     }
+    sem_post(print_sem);
     exit(0);
 }
 
@@ -73,7 +82,11 @@ void atualizar(int miner_id, int valido, int recompensa) {
 
 int statistics(){
     logwrite("Statistics thread started\n");
-
+    print_sem = sem_open("/print_sync", 0);
+    if (print_sem == SEM_FAILED) {
+        perror("sem_open");
+        exit(1);
+    }
     key_t key = ftok("teste", 65);
     msgqid = msgget(key, 0666);
 
@@ -90,12 +103,13 @@ int statistics(){
             perror("msgrcv");
             exit(1);
         }
-
+    /*
         printf("Mensagem recebida:\n");
         printf("  Miner ID: %d\n", m.miner_id);
         printf("  Valido: %d\n", m.is_valid);
         printf("  Recompensa: %d\n", m.total_reward);
         printf("  Tempo Médio: %ld\n", m.tempo_medio);
+    */
 
         tempo_total += m.tempo_medio;
         count += 1;
