@@ -21,7 +21,7 @@ void clean() {
 
 
 void read_shared_memory() {
-    int pool_size = trans_pool->pool_size;
+    int pool_size = trans_pool->count;
     printf("\n--- Reading Shared Memory ---\n");
 
     for (int i = 0; i < pool_size; i++) {
@@ -84,42 +84,43 @@ int main(int argc, char *argv[]) {
             return -1;
         }
     
-        int inserted = 0;
         int pool_size = trans_pool->pool_size;
-    
-        for (int i = 0; i < pool_size; i++) {
-            if (trans_pool->transactions[i].empty == 1) {  // Slot is available
-    
-                // Generate a unique TX ID: PID + Counter
-                snprintf(trans_pool->transactions[i].tx_id, sizeof(trans_pool->transactions[i].tx_id),
-                         "TX_%d_%d", getpid(), tx_counter++);
-    
-                trans_pool->transactions[i].reward = reward;
-                trans_pool->transactions[i].value = rand() % 100 + 1;
-                trans_pool->transactions[i].timestamp = time(NULL);
-                trans_pool->transactions[i].age = 0; 
-                trans_pool->transactions[i].empty = 0;
-                trans_pool->count += 1;
-    
-                printf("Transaction added at index %d -> ID: %s | Reward: %d | Value: %d | Count total %d\n",
-                       i,
-                       trans_pool->transactions[i].tx_id,
-                       trans_pool->transactions[i].reward,
-                       trans_pool->transactions[i].value,
-                       trans_pool->count );
-    
-                inserted = 1;
-                break;
+
+        if(trans_pool->count < pool_size){
+            for (int i = 0; i < pool_size; i++) {
+                if (trans_pool->transactions[i].empty == 1) {  // Slot is available
+        
+                    // Generate a unique TX ID: PID + Counter
+                    snprintf(trans_pool->transactions[i].tx_id, sizeof(trans_pool->transactions[i].tx_id),
+                            "TX_%d_%d", getpid(), tx_counter++);
+        
+                    trans_pool->transactions[i].reward = reward;
+                    trans_pool->transactions[i].value = rand() % 100 + 1;
+                    trans_pool->transactions[i].timestamp = time(NULL);
+                    trans_pool->transactions[i].age = 0; 
+                    trans_pool->transactions[i].empty = 0;
+                    trans_pool->count += 1;
+        
+                    printf("Transaction added at index %d -> ID: %s | Reward: %d | Value: %d | Count total %d\n",
+                        i,
+                        trans_pool->transactions[i].tx_id,
+                        trans_pool->transactions[i].reward,
+                        trans_pool->transactions[i].value,
+                        trans_pool->count );
+                    break;
+                }
             }
-        }
-    
-        if (!inserted) {
+        }else{
+            read_shared_memory();
             printf("Transaction Pool is full. Skipping this transaction.\n");
+            sem_post(sem_transactions);
+            sleep(sleep_time / 1000);
+            continue;
         }
-    
-        sem_post(sem_transactions);
-        sleep(sleep_time / 1000);
         read_shared_memory();
+        sem_post(sem_transactions);
+        
+        
     }
     
 

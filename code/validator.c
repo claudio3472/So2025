@@ -506,7 +506,7 @@ int validator(int tam){
                 }
                 ledger_val->count++;
 
-                print_ledger_info();
+                //print_ledger_info();
                 // Increment the block count in the ledger
             
 

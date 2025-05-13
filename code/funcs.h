@@ -103,7 +103,7 @@ typedef struct
 
 int miner(int num);
 
-int validator();
+int validator(int tam);
 
 int statistics();
 

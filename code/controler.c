@@ -54,48 +54,61 @@ int destroy_block_sem() {
 void clean() {
     
     if (getpid() != main_pid) return;
-
+    sem_wait(print_sem);
     printf("\nSIGINT detected. Cleaning up...\n");
-
+    sem_post(print_sem);
     pthread_cancel(thread_validatores_aux);
 
     if (trans_Pool) {
         shmdt(trans_Pool);
     }
-
+    sem_wait(print_sem);
     waitpid(pid1, NULL, 0);
+    sem_post(print_sem);
+    sem_wait(print_sem);
     waitpid(pid2, NULL, 0);
+    sem_post(print_sem);
     waitpid(pid3, NULL, 0);
      // Kill pid4 if running
     if (pid4 > 0) {
+        sem_wait(print_sem);
         kill(pid4, SIGTERM);
         waitpid(pid4, NULL, 0);
         printf("[INFO] Validator60 (pid4) terminated during cleanup.\n");
+        sem_post(print_sem);
     }
 
     // Kill pid5 if running
     if (pid5 > 0) {
+        sem_wait(print_sem);
         kill(pid5, SIGTERM);
         waitpid(pid5, NULL, 0);
         printf("[INFO] Validator80 (pid5) terminated during cleanup.\n");
+        sem_post(print_sem);
     }
     shmctl(shmid, IPC_RMID, NULL); // Remove shared memory 1
+    
     logwrite("Shared Memory 1 deleted\n");
+
     trans_Pool = NULL; // Set pointer to NULL after deletion
     
     shmctl(shmid2, IPC_RMID, NULL); // Remove shared memory 2
+    sem_wait(print_sem);
     logwrite("Shared Memory 2 deleted\n");
+    sem_post(print_sem);
     ledger = NULL;
 
     msgctl(mqid, IPC_RMID, NULL);
+    sem_wait(print_sem);
     logwrite("Message Queue deleted\n");
-
+    sem_post(print_sem);
+    sem_wait(print_sem);
     if (unlink("/tmp/VALIDATOR_INPUT") == 0) {
         logwrite("Named Pipe VALIDATOR_INPUT deleted\n");
     } else {
         perror("Failed to delete named pipe");
     }
-
+    sem_post(print_sem);
     
 
     destroy_log_things();
@@ -297,13 +310,11 @@ int main(int argc, char *argv[]) {
 
     tam = sizeof(int) * 3 + sizeof(time_t) + sizeof(unsigned int) + HASH_SIZE * 2 + sizeof(transaction) * trans_Pool->max_trans_per_block;
 
-    int total_size = sizeof(blockchain_Ledger) 
-               + BLOCKCHAIN_BLOCKS * (sizeof(block) + TRANSACTIONS_BLOCK * sizeof(transaction));
-
-    if ((shmid2 = shmget(key2, total_size, IPC_CREAT | 0777)) == -1) {
+    if ((shmid2 = shmget(key2, sizeof(blockchain_Ledger) * BLOCKCHAIN_BLOCKS, IPC_CREAT | 0777)) == -1) {
         perror("Error: in shmget - blockchain_Ledger");
         return 1;
     }
+    
     ledger = (blockchain_Ledger *)shmat(shmid2, NULL, 0);
     if (ledger == (void *)-1) {
         perror("Error: in shmat - blockchain_Ledger");
